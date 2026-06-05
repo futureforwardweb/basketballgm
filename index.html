@@ -179,23 +179,24 @@ select:focus,input:focus{border-color:var(--acc)}
   <div style="font-size:30px;font-weight:900;color:var(--acc);margin-bottom:4px">🏀 HoopsGM</div>
   <div style="font-size:14px;color:var(--t2);margin-bottom:32px">NBA General Manager Simulator — 2025-26 Season</div>
   <div style="display:flex;gap:16px;flex-wrap:wrap;justify-content:center;margin-bottom:24px">
-    <div class="mp-card" onclick="showSoloSetup()">
+    <button onclick="showSoloSetup()" style="background:var(--bg2);border:2px solid var(--bdr);border-radius:10px;padding:24px 20px;cursor:pointer;min-width:180px;transition:border-color .15s;color:inherit" onmouseover="this.style.borderColor='var(--acc)'" onmouseout="this.style.borderColor='var(--bdr)'">
       <div style="font-size:36px;margin-bottom:10px">👤</div>
       <div style="font-size:15px;font-weight:800;color:var(--t1);margin-bottom:6px">Solo Mode</div>
       <div style="font-size:11px;color:var(--t2)">Play alone vs AI teams</div>
-    </div>
-    <div class="mp-card" onclick="showCreateLeague()">
+    </button>
+    <button onclick="showCreateLeague()" style="background:var(--bg2);border:2px solid var(--bdr);border-radius:10px;padding:24px 20px;cursor:pointer;min-width:180px;transition:border-color .15s;color:inherit" onmouseover="this.style.borderColor='var(--acc)'" onmouseout="this.style.borderColor='var(--bdr)'">
       <div style="font-size:36px;margin-bottom:10px">🌐</div>
       <div style="font-size:15px;font-weight:800;color:var(--t1);margin-bottom:6px">Create League</div>
       <div style="font-size:11px;color:var(--t2)">Start a league, invite friends</div>
-    </div>
-    <div class="mp-card" onclick="showJoinLeague()">
+    </button>
+    <button onclick="showJoinLeague()" style="background:var(--bg2);border:2px solid var(--bdr);border-radius:10px;padding:24px 20px;cursor:pointer;min-width:180px;transition:border-color .15s;color:inherit" onmouseover="this.style.borderColor='var(--acc)'" onmouseout="this.style.borderColor='var(--bdr)'">
       <div style="font-size:36px;margin-bottom:10px">🔗</div>
       <div style="font-size:15px;font-weight:800;color:var(--t1);margin-bottom:6px">Join League</div>
       <div style="font-size:11px;color:var(--t2)">Enter a league code</div>
-    </div>
+    </button>
   </div>
   <div id="mp-extra" style="max-width:600px;width:100%"></div>
+  <div id="err-display" style="max-width:600px;width:100%;margin-top:10px;font-size:11px;color:var(--red);display:none"></div>
 </div>
 
 <!-- TEAM SELECT -->
@@ -286,7 +287,6 @@ select:focus,input:focus{border-color:var(--acc)}
 </div>
 <div id="toast"></div>
 <div id="modal-root"></div>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ════════════════════════════════════════════════════════════════
 // SUPABASE CONFIG — Replace with your project credentials
@@ -1063,7 +1063,7 @@ function toast(msg){const el=document.getElementById("toast");el.textContent=msg
 function runLotteryAlgorithm(lotteryTeams){const odds=LOTTERY_ODDS,rem=[...lotteryTeams],wts=[...odds.slice(0,rem.length)],lOrder=[];for(let i=0;i<4;i++){if(!rem.length)break;const total=wts.reduce((s,w)=>s+w,0);let rnd=Math.random()*total,cum=0,ch=0;for(let j=0;j<rem.length;j++){cum+=wts[j];if(rnd<=cum){ch=j;break;}}lOrder.push(rem[ch].id);rem.splice(ch,1);wts.splice(ch,1);}rem.forEach(t=>lOrder.push(t.id));G.teams.filter(t=>!lotteryTeams.find(lt=>lt.id===t.id)).sort((a,b)=>a.wins-b.wins).forEach(t=>lOrder.push(t.id));return lOrder;}
 
 // SUPABASE MULTIPLAYER
-function initSupabase(){if(SUPABASE_URL==="https://foxpmrbzxquiyfbbjyqu.supabase.co")return;try{const{createClient}=window.supabase||{};if(createClient)supabaseClient=createClient(SUPABASE_URL,SUPABASE_ANON_KEY);}catch(e){console.error("Supabase init failed:",e);}}
+function initSupabase(){try{const{createClient}=window.supabase||{};if(createClient){supabaseClient=createClient(SUPABASE_URL,SUPABASE_ANON_KEY);console.log("Supabase connected!");}}catch(e){console.log("Supabase not available - solo mode only");}}
 async function createLeagueDB(leagueName,yourName){if(!supabaseClient){toast("Configure Supabase for multiplayer");return;}const leagueId=Math.random().toString(36).substr(2,8).toUpperCase();G.leagueId=leagueId;G.leagueName=leagueName;G.isHost=true;G.playerName=yourName;G.humanTeams={};await supabaseClient.from("leagues").insert({id:leagueId,name:leagueName,state:JSON.stringify({teams:G.teams,picks:G.picks,humanTeams:{}}),phase:"setup",created_at:new Date().toISOString()});await joinLeagueRoom(leagueId,yourName,null);}
 async function joinLeagueDB(leagueId,yourName){if(!supabaseClient){toast("Configure Supabase for multiplayer");return;}const{data}=await supabaseClient.from("leagues").select("*").eq("id",leagueId).single();if(!data){toast("League not found: "+leagueId);return;}G.leagueId=leagueId;G.leagueName=data.name;G.isHost=false;G.playerName=yourName;if(data.state){const s=JSON.parse(data.state);G.teams=s.teams;G.picks=s.picks;G.humanTeams=s.humanTeams||{};}await joinLeagueRoom(leagueId,yourName,null);}
 async function joinLeagueRoom(leagueId,yourName,teamId){if(!supabaseClient)return;await supabaseClient.from("league_players").upsert({league_id:leagueId,player_name:yourName,team_id:teamId,updated_at:new Date().toISOString()});if(realtimeChannel)realtimeChannel.unsubscribe();realtimeChannel=supabaseClient.channel(`league-${leagueId}`).on("postgres_changes",{event:"*",schema:"public",table:"league_players",filter:`league_id=eq.${leagueId}`},()=>refreshLeaguePlayers()).on("postgres_changes",{event:"*",schema:"public",table:"leagues",filter:`id=eq.${leagueId}`},payload=>{if(payload.new?.state){const s=JSON.parse(payload.new.state);// Apply all state from host
@@ -1107,9 +1107,29 @@ function confirmTeamSelect(){if(selectedTeamId<0)return;G.playerTeam=selectedTea
 // LOBBY SCREENS
 function showSoloSetup(){document.getElementById("mp-extra").innerHTML=`<div style="background:var(--bg2);border:1px solid var(--bdr);border-radius:10px;padding:20px"><div style="font-size:14px;font-weight:700;color:var(--t1);margin-bottom:12px">Enter Your Name</div><input type="text" id="solo-name" placeholder="Your GM name..." style="width:100%;margin-bottom:12px" value="GM"><button class="btn btn-acc" onclick="startSoloMode()">Continue →</button></div>`;}
 function startSoloMode(){const name=document.getElementById("solo-name")?.value||"GM";G.playerName=name;buildTeams();document.getElementById("multiplayer-screen").style.display="none";document.getElementById("team-select-screen").style.display="flex";buildTeamSelectGrid();}
-function showCreateLeague(){document.getElementById("mp-extra").innerHTML=`<div style="background:var(--bg2);border:1px solid var(--bdr);border-radius:10px;padding:20px"><div style="font-size:14px;font-weight:700;color:var(--t1);margin-bottom:12px">Create a Multiplayer League</div><div style="display:flex;flex-direction:column;gap:10px;margin-bottom:12px"><input type="text" id="cl-name" placeholder="Your name..." value="Commissioner"><input type="text" id="cl-league" placeholder="League name..." value="My HoopsGM League"></div><button class="btn btn-acc" onclick="startCreateLeague()">Create League →</button>
-<div style="margin-top:16px;background:var(--bg1);border:1px solid var(--bdr);border-radius:8px;padding:14px;font-size:12px;color:var(--t2)"><div style="font-weight:700;color:var(--t1);margin-bottom:8px">📚 Supabase Setup (Required for Multiplayer)</div><div style="line-height:2">1. Go to <a href="https://supabase.com" target="_blank" style="color:var(--acc)">supabase.com</a> → create free project<br>2. SQL Editor → run:<br><div style="background:var(--bg0);border-radius:4px;padding:8px;margin:4px 0;font-family:monospace;font-size:10px;color:var(--green)">CREATE TABLE leagues (id TEXT PRIMARY KEY, name TEXT, state JSONB, phase TEXT, created_at TIMESTAMPTZ);<br>CREATE TABLE league_players (id BIGSERIAL PRIMARY KEY, league_id TEXT, player_name TEXT, team_id INT, updated_at TIMESTAMPTZ, UNIQUE(league_id, player_name));<br>ALTER TABLE leagues ENABLE ROW LEVEL SECURITY;<br>ALTER TABLE league_players ENABLE ROW LEVEL SECURITY;<br>CREATE POLICY "Allow all" ON leagues FOR ALL USING (true);<br>CREATE POLICY "Allow all" ON league_players FOR ALL USING (true);</div>3. Project Settings → API → copy URL + anon key<br>4. Open this HTML file, find <code style="color:var(--yellow)">https://foxpmrbzxquiyfbbjyqu.supabase.co</code> and <code style="color:var(--yellow)">eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZveHBtcmJ6eHF1aXlmYmJqeXF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1OTAyNTUsImV4cCI6MjA5NjE2NjI1NX0.Nd0UA6Vx_Ey8nZc0F1Oecof04t06pAF_1q1NawvVUZQ</code> and replace them<br>5. Add before &lt;/body&gt;: <code style="color:var(--yellow)">&lt;script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"&gt;&lt;/script&gt;</code></div></div></div>`;}
-function showJoinLeague(){document.getElementById("mp-extra").innerHTML=`<div style="background:var(--bg2);border:1px solid var(--bdr);border-radius:10px;padding:20px"><div style="font-size:14px;font-weight:700;color:var(--t1);margin-bottom:12px">Join a League</div><div style="display:flex;flex-direction:column;gap:10px;margin-bottom:12px"><input type="text" id="jl-name" placeholder="Your name..." value="Player 2"><input type="text" id="jl-code" placeholder="League code (e.g. ABC12345)..." style="text-transform:uppercase;letter-spacing:2px"></div><button class="btn btn-acc" onclick="startJoinLeague()">Join League →</button></div>`;}
+function showCreateLeague(){
+  const d=document.getElementById("mp-extra");
+  d.innerHTML="<div style='background:var(--bg2);border:1px solid var(--bdr);border-radius:10px;padding:20px'>"
+    +"<div style='font-size:14px;font-weight:700;color:var(--t1);margin-bottom:12px'>Create a League</div>"
+    +"<div style='display:flex;flex-direction:column;gap:10px;margin-bottom:12px'>"
+    +"<input type='text' id='cl-name' placeholder='Your name...' value='Commissioner' style='width:100%'>"
+    +"<input type='text' id='cl-league' placeholder='League name...' value='My HoopsGM League' style='width:100%'>"
+    +"</div>"
+    +"<button class='btn btn-acc' onclick='startCreateLeague()' style='width:100%'>Create League &rarr;</button>"
+    +"<p style='font-size:11px;color:var(--t3);margin-top:10px'>Supabase credentials are pre-configured. Your friend needs the same file.</p>"
+    +"</div>";
+}
+function showJoinLeague(){
+  const d=document.getElementById("mp-extra");
+  d.innerHTML="<div style='background:var(--bg2);border:1px solid var(--bdr);border-radius:10px;padding:20px'>"
+    +"<div style='font-size:14px;font-weight:700;color:var(--t1);margin-bottom:12px'>Join a League</div>"
+    +"<div style='display:flex;flex-direction:column;gap:10px;margin-bottom:12px'>"
+    +"<input type='text' id='jl-name' placeholder='Your name...' value='Player 2' style='width:100%'>"
+    +"<input type='text' id='jl-code' placeholder='League code (e.g. ABC12345)...' style='width:100%;text-transform:uppercase;letter-spacing:2px'>"
+    +"</div>"
+    +"<button class='btn btn-acc' onclick='startJoinLeague()' style='width:100%'>Join League &rarr;</button>"
+    +"</div>";
+}
 function startCreateLeague(){const name=document.getElementById("cl-name")?.value||"GM",ln=document.getElementById("cl-league")?.value||"My League";initSupabase();if(!supabaseClient){toast("Supabase not configured — see setup guide above");return;}buildTeams();G.playerName=name;G.leagueName=ln;G.isHost=true;document.getElementById("multiplayer-screen").style.display="none";document.getElementById("team-select-screen").style.display="flex";document.getElementById("ts-subtitle").textContent="Choose your team — friends will see taken teams";buildTeamSelectGrid();createLeagueDB(ln,name);}
 function startJoinLeague(){const name=document.getElementById("jl-name")?.value||"Player",code=(document.getElementById("jl-code")?.value||"").toUpperCase().trim();if(!code){toast("Enter a league code");return;}initSupabase();if(!supabaseClient){toast("Supabase not configured");return;}G.playerName=name;document.getElementById("multiplayer-screen").style.display="none";document.getElementById("team-select-screen").style.display="flex";buildTeams();buildTeamSelectGrid();joinLeagueDB(code,name);}
 
@@ -1118,6 +1138,12 @@ function runLotteryScreen(){const lt=[...G.teams].sort((a,b)=>a.wins-b.wins||b.l
 function startGame(){document.getElementById("lottery-screen").style.display="none";document.getElementById("app").style.display="flex";generateSchedule();buildDraftClass();addNews(`🏀 Welcome GM ${G.playerName}! You are running the ${getT().name}. Season ${G.season-1}-${String(G.season).slice(-2)} begins!`);addNews(`🎱 Draft lottery: ${G.teams[G.lotteryOrder[0]].name} picks #1. You pick #${G.lotteryOrder.indexOf(G.playerTeam)+1}.`);if(DRAFT_2027[0])addNews(`📋 Top 2027 prospect: ${DRAFT_2027[0].n} (${DRAFT_2027[0].pos}, ${DRAFT_2027[0].school}) — "${DRAFT_2027[0].note}"`);updateSB();nav("dash");document.getElementById("owner-pressure-wrap").style.display="block";}
 
 // BOOT
+window.onerror=function(msg,src,line,col,err){
+  const d=document.getElementById('err-display');
+  if(d){d.style.display='block';d.textContent='JS Error: '+msg+' (line '+line+')';}
+  console.error('Error:',msg,'line:',line,err);
+  return false;
+};
 initSupabase();
 const _url=new URL(window.location.href),_lp=_url.searchParams.get("league");
 if(_lp){setTimeout(()=>{showJoinLeague();const el=document.getElementById("jl-code");if(el)el.value=_lp;},100);}
