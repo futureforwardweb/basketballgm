@@ -286,6 +286,7 @@ select:focus,input:focus{border-color:var(--acc)}
 </div>
 <div id="toast"></div>
 <div id="modal-root"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ════════════════════════════════════════════════════════════════
 // SUPABASE CONFIG — Replace with your project credentials
@@ -766,7 +767,6 @@ const TEAMS_DATA=[
 const LOTTERY_ODDS = [14.0, 14.0, 14.0, 11.5, 11.5, 9.0, 6.75, 6.75, 4.5, 3.0, 2.0, 1.5, 1.0, 0.5];
 // Corresponding lottery seed positions (1=worst record)
 // Seeds 1-14 get lottery odds above. Seeds 15-30 are playoff teams picked in reverse order.
-<script>
 const DRAFT_2027=[
 {n:"AJ Dybantsa",pos:"SF",age:20,ovr:83,pot:98,school:"BYU",note:"Supercharged Jaylen Brown — expected #1"},
 {n:"Darryn Peterson",pos:"SG",age:20,ovr:82,pot:96,school:"Kansas",note:"Elite scoring guard"},
@@ -1044,6 +1044,5 @@ initSupabase();
 const _url=new URL(window.location.href),_lp=_url.searchParams.get("league");
 if(_lp){setTimeout(()=>{showJoinLeague();const el=document.getElementById("jl-code");if(el)el.value=_lp;},100);}
 </script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </body>
 </html>
