@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>HoopsGM — NBA General Manager Simulator</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#070d18;color:#dde4f0;font-size:13px;overflow:hidden}
+:root{
+  --bg0:#070d18;--bg1:#0c1522;--bg2:#121e2e;--bg3:#182538;--bg4:#1e2e44;
+  --acc:#f97316;--acc2:#fb923c;--blue:#3b82f6;--blue2:#60a5fa;
+  --green:#22c55e;--red:#ef4444;--yellow:#eab308;--purple:#a855f7;
+  --t1:#f1f5f9;--t2:#94a3b8;--t3:#475569;--t4:#334155;
+  --bdr:#1a2d45;--bdr2:#243d5a;
+}
+/* Layout */
+#app{display:flex;height:100vh;overflow:hidden}
+#sidebar{width:215px;background:linear-gradient(180deg,#0b1420,#08101c);border-right:1px solid var(--bdr);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto}
+#main{flex:1;overflow-y:auto;background:var(--bg0)}
+.page{padding:20px;display:none;min-height:100vh}.page.active{display:block}
+/* Sidebar */
+.sb-logo{padding:14px 14px 10px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;gap:8px}
+.sb-logo-text{font-size:18px;font-weight:900;color:var(--acc)}.sb-logo-text em{color:var(--t1);font-style:normal}
+.sb-team-box{padding:10px 14px;background:rgba(249,115,22,.07);border-bottom:1px solid var(--bdr)}
+.sb-tname{font-size:13px;font-weight:800;color:var(--t1)}.sb-trec{font-size:11px;color:var(--t2);margin-top:2px}
+.sb-sec{border-bottom:1px solid var(--bdr);padding:5px 0 3px}
+.sb-lbl{font-size:9px;font-weight:800;color:var(--t4);text-transform:uppercase;letter-spacing:1.2px;padding:4px 14px 5px}
+.nv{display:flex;align-items:center;gap:9px;padding:6px 14px;cursor:pointer;color:var(--t3);transition:all .1s;font-size:12px;border-left:3px solid transparent}
+.nv:hover{background:rgba(255,255,255,.04);color:var(--t2)}
+.nv.active{background:rgba(249,115,22,.1);color:var(--acc);border-left-color:var(--acc);font-weight:700}
+.nv-ic{font-size:13px;width:15px;text-align:center}
+.nv-badge{margin-left:auto;background:var(--red);color:white;font-size:9px;font-weight:800;padding:1px 5px;border-radius:10px;min-width:16px;text-align:center}
+.sb-footer{padding:10px 14px;margin-top:auto;border-top:1px solid var(--bdr)}
+.sb-sea-lbl{font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.8px}
+.sb-sea{font-size:14px;font-weight:800;color:var(--acc2);margin-top:1px}.sb-phase{font-size:10px;color:var(--t2)}
+/* Page */
+.ph{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px;gap:12px;flex-wrap:wrap}
+.ph-left .pt{font-size:21px;font-weight:900;color:var(--t1)}.ph-left .ps{font-size:11px;color:var(--t2);margin-top:2px}
+.ph-actions{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+/* Stat cards */
+.sg{display:grid;gap:10px;margin-bottom:16px}
+.sg4{grid-template-columns:repeat(4,1fr)}.sg3{grid-template-columns:repeat(3,1fr)}.sg2{grid-template-columns:1fr 1fr}
+.sc{background:var(--bg2);border:1px solid var(--bdr);border-radius:9px;padding:13px 15px}
+.sc .lbl{font-size:9px;text-transform:uppercase;letter-spacing:.9px;color:var(--t3);font-weight:700;margin-bottom:4px}
+.sc .val{font-size:22px;font-weight:900;color:var(--t1);line-height:1.1}.sc .sub{font-size:10px;color:var(--t2);margin-top:3px}
+.sc-acc{border-top:2px solid var(--acc)}
+/* Tables */
+.tw{background:var(--bg1);border:1px solid var(--bdr);border-radius:9px;overflow:hidden;margin-bottom:14px}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead tr{background:var(--bg3)}
+th{padding:8px 9px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--t3);font-weight:700;border-bottom:1px solid var(--bdr);white-space:nowrap;cursor:pointer;user-select:none}
+th:hover{color:var(--acc2)}
+td{padding:7px 9px;border-bottom:1px solid var(--bdr);color:var(--t2);white-space:nowrap}
+tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:rgba(255,255,255,.02);color:var(--t1)}
+/* Badges */
+.badge{display:inline-block;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:700}
+.bg-g{background:#052e16;color:#4ade80;border:1px solid #14532d}
+.bg-r{background:#450a0a;color:#f87171;border:1px solid #7f1d1d}
+.bg-y{background:#422006;color:#fbbf24;border:1px solid #713f12}
+.bg-b{background:#0c1a3a;color:#60a5fa;border:1px solid #1e3a5f}
+.bg-p{background:#2e1065;color:#c084fc;border:1px solid #4c1d95}
+.bg-gr{background:var(--bg3);color:var(--t2);border:1px solid var(--bdr)}
+.bg-a{background:#431407;color:#fb923c;border:1px solid #7c2d12}
+.ovr{display:inline-flex;align-items:center;justify-content:center;width:33px;height:19px;border-radius:4px;font-size:11px;font-weight:900}
+.oS{background:#2e1065;color:#c084fc}.oA{background:#0c1a3a;color:#60a5fa}
+.oB{background:#052e16;color:#4ade80}.oC{background:#422006;color:#fbbf24}.oD{background:#450a0a;color:#f87171}
+.pos{display:inline-block;padding:2px 5px;border-radius:3px;font-size:9px;font-weight:800;letter-spacing:.3px}
+.pPG{background:#0c1a3a;color:#60a5fa}.pSG{background:#042f2e;color:#2dd4bf}
+.pSF{background:#052e16;color:#4ade80}.pPF{background:#422006;color:#fbbf24}.pC{background:#2e1065;color:#c084fc}
+/* Buttons */
+.btn{padding:7px 13px;border-radius:7px;border:none;cursor:pointer;font-size:12px;font-weight:700;transition:all .1s;outline:none}
+.btn:active{transform:scale(.97)}
+.btn-acc{background:var(--acc);color:white}.btn-acc:hover{background:var(--acc2)}
+.btn-bl{background:#1e3a5f;color:#60a5fa;border:1px solid #2d5a8e}.btn-bl:hover{background:#2d5a8e}
+.btn-gr{background:var(--bg3);color:var(--t2);border:1px solid var(--bdr)}.btn-gr:hover{background:var(--bg4);color:var(--t1)}
+.btn-gn{background:#052e16;color:#4ade80;border:1px solid #14532d}.btn-gn:hover{background:#14532d}
+.btn-rd{background:#450a0a;color:#f87171;border:1px solid #7f1d1d}.btn-rd:hover{background:#7f1d1d}
+.btn-pur{background:#2e1065;color:#c084fc;border:1px solid #4c1d95}.btn-pur:hover{background:#4c1d95}
+.btn-sm{padding:4px 10px;font-size:11px}.btn-xs{padding:2px 8px;font-size:10px}
+/* Section */
+.sh{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px}
+.st{font-size:13px;font-weight:800;color:var(--t1)}
+/* Tabs */
+.tabs{display:flex;gap:2px;margin-bottom:13px;border-bottom:1px solid var(--bdr)}
+.tab{padding:7px 13px;cursor:pointer;font-size:12px;color:var(--t3);border-bottom:2px solid transparent;margin-bottom:-1px;font-weight:600;transition:all .1s}
+.tab:hover{color:var(--t2)}.tab.active{color:var(--acc);border-bottom-color:var(--acc)}
+/* Game card */
+.gc{display:flex;align-items:center;gap:10px;padding:9px 13px;background:var(--bg1);border:1px solid var(--bdr);border-radius:7px;margin-bottom:5px}
+.gc-wk{width:34px;text-align:center;font-size:10px;color:var(--t3);flex-shrink:0}
+/* Player rows */
+.pr{display:flex;align-items:center;gap:9px;padding:8px 10px;background:var(--bg2);border:1px solid var(--bdr);border-radius:6px;margin-bottom:4px;cursor:pointer;transition:all .1s}
+.pr:hover{border-color:var(--bdr2);background:var(--bg3)}
+.pr.sel{border-color:var(--acc);background:rgba(249,115,22,.08)}
+.pr.sel-b{border-color:var(--blue);background:rgba(59,130,246,.08)}
+/* Attr bars */
+.ab{display:flex;align-items:center;gap:7px;margin-bottom:6px}
+.ab-lbl{width:88px;font-size:10px;color:var(--t2);flex-shrink:0}
+.ab-track{flex:1;height:5px;background:var(--bg3);border-radius:2px;overflow:hidden}
+.ab-fill{height:100%;border-radius:2px;transition:width .3s}
+.ab-val{width:26px;text-align:right;font-size:11px;font-weight:800;color:var(--t1)}
+/* Modal */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.82);display:flex;align-items:center;justify-content:center;z-index:1000;backdrop-filter:blur(3px)}
+.modal{background:var(--bg1);border:1px solid var(--bdr2);border-radius:13px;padding:22px;min-width:480px;max-width:780px;max-height:90vh;overflow-y:auto;box-shadow:0 28px 90px rgba(0,0,0,.7)}
+.modal h2{font-size:17px;font-weight:900;color:var(--t1);margin-bottom:3px}
+.modal-sub{font-size:11px;color:var(--t2);margin-bottom:14px;display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+.mfooter{display:flex;gap:9px;justify-content:flex-end;margin-top:16px;padding-top:13px;border-top:1px solid var(--bdr)}
+/* Forms */
+select,input[type=text],input[type=number]{background:var(--bg2);color:var(--t1);border:1px solid var(--bdr2);border-radius:6px;padding:6px 9px;font-size:12px;cursor:pointer;outline:none;transition:border .1s}
+select:focus,input:focus{border-color:var(--acc)}
+/* Toast */
+#toast{position:fixed;bottom:20px;right:20px;background:var(--bg2);border:1px solid var(--acc);color:var(--t1);padding:11px 18px;border-radius:9px;font-size:12px;z-index:2000;opacity:0;transform:translateY(6px);transition:all .25s;pointer-events:none;max-width:360px;font-weight:600}
+#toast.show{opacity:1;transform:translateY(0)}
+/* Standings */
+.playoff-row td{border-left:3px solid var(--green)!important}
+.myrow td{background:rgba(249,115,22,.04)!important}
+.friendrow td{background:rgba(59,130,246,.04)!important}
+/* Layout helpers */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.fr{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-bottom:11px}
+/* News */
+.ni{padding:7px 11px;background:var(--bg2);border-left:3px solid var(--acc);border-radius:0 5px 5px 0;margin-bottom:5px;font-size:11px;color:var(--t2)}.ni b{color:var(--t1)}
+/* Scrollbar */
+::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:var(--bg0)}
+::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:2px}
+/* Screens */
+#team-select-screen,#lottery-screen,#multiplayer-screen{position:fixed;inset:0;background:var(--bg0);z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;overflow-y:auto;padding:20px}
+.team-card{background:var(--bg2);border:2px solid var(--bdr);border-radius:10px;padding:13px 15px;cursor:pointer;transition:all .15s}
+.team-card:hover{border-color:var(--acc);background:var(--bg3);transform:scale(1.02)}
+.team-card.selected{border-color:var(--acc);background:rgba(249,115,22,.12)}
+.team-card.taken{border-color:var(--blue);background:rgba(59,130,246,.1);cursor:default;opacity:0.7}
+/* Salary/contract bars */
+.cbar{height:3px;background:var(--bg3);border-radius:2px;margin-top:3px;overflow:hidden}
+.cbar-f{height:100%;background:linear-gradient(90deg,var(--acc),var(--acc2));border-radius:2px}
+.salbar{height:6px;background:var(--bg3);border-radius:3px;overflow:hidden;margin-top:4px}
+.salbar-f{height:100%;border-radius:3px}
+/* Incoming trade notification */
+.trade-offer-card{background:var(--bg2);border:2px solid var(--yellow);border-radius:10px;padding:14px;margin-bottom:10px}
+.trade-offer-card .toc-header{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+/* Box score */
+.box-score-table td,.box-score-table th{padding:5px 8px;font-size:11px}
+/* Injury badge */
+.injury{display:inline-block;padding:1px 5px;border-radius:3px;font-size:9px;font-weight:700;background:#450a0a;color:#f87171;margin-left:4px}
+/* Pick badge */
+.pick-badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700;background:rgba(234,179,8,.15);color:var(--yellow);border:1px solid rgba(234,179,8,.3)}
+/* Advanced stats */
+.adv-stat{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--bdr);font-size:11px}
+.adv-stat .k{color:var(--t2)}.adv-stat .v{color:var(--t1);font-weight:700}
+/* Morale bar */
+.morale-bar{height:4px;border-radius:2px;overflow:hidden;background:var(--bg3);margin-top:3px}
+.morale-fill{height:100%;border-radius:2px;transition:width .5s}
+/* Owner pressure */
+.pressure-bar{height:8px;border-radius:4px;overflow:hidden;background:var(--bg3);margin:6px 0}
+.pressure-fill{height:100%;border-radius:4px;transition:width .5s}
+/* Play-by-play */
+.pbp-entry{padding:5px 10px;border-bottom:1px solid var(--bdr);font-size:11px;color:var(--t2)}
+.pbp-entry.home{border-left:2px solid var(--acc)}
+.pbp-entry.away{border-left:2px solid var(--blue)}
+/* Notification dot */
+.ndot{width:8px;height:8px;background:var(--red);border-radius:50%;display:inline-block;margin-left:4px;vertical-align:middle;animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+/* Multiplayer */
+.mp-card{background:var(--bg2);border:1px solid var(--bdr);border-radius:10px;padding:20px;text-align:center;cursor:pointer;transition:all .15s;min-width:200px}
+.mp-card:hover{border-color:var(--acc);background:var(--bg3)}
+.league-player-row{display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--bg2);border:1px solid var(--bdr);border-radius:6px;margin-bottom:5px}
+/* Draft board grid */
+.draft-board{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.draft-prospect{padding:12px;background:var(--bg2);border:1px solid var(--bdr);border-radius:8px;transition:all .12s;cursor:pointer}
+.draft-prospect:hover{border-color:var(--acc)}
+/* Award card */
+.award-card{background:var(--bg2);border:1px solid var(--yellow);border-radius:8px;padding:12px;margin-bottom:8px;display:flex;align-items:center;gap:12px}
+</style>
+</head>
+<body>
+<!-- MULTIPLAYER LOBBY -->
+<div id="multiplayer-screen">
+  <div style="font-size:30px;font-weight:900;color:var(--acc);margin-bottom:4px">🏀 HoopsGM</div>
+  <div style="font-size:14px;color:var(--t2);margin-bottom:32px">NBA General Manager Simulator — 2025-26 Season</div>
+  <div style="display:flex;gap:16px;flex-wrap:wrap;justify-content:center;margin-bottom:24px">
+    <div class="mp-card" onclick="showSoloSetup()">
+      <div style="font-size:36px;margin-bottom:10px">👤</div>
+      <div style="font-size:15px;font-weight:800;color:var(--t1);margin-bottom:6px">Solo Mode</div>
+      <div style="font-size:11px;color:var(--t2)">Play alone vs AI teams</div>
+    </div>
+    <div class="mp-card" onclick="showCreateLeague()">
+      <div style="font-size:36px;margin-bottom:10px">🌐</div>
+      <div style="font-size:15px;font-weight:800;color:var(--t1);margin-bottom:6px">Create League</div>
+      <div style="font-size:11px;color:var(--t2)">Start a league, invite friends</div>
+    </div>
+    <div class="mp-card" onclick="showJoinLeague()">
+      <div style="font-size:36px;margin-bottom:10px">🔗</div>
+      <div style="font-size:15px;font-weight:800;color:var(--t1);margin-bottom:6px">Join League</div>
+      <div style="font-size:11px;color:var(--t2)">Enter a league code</div>
+    </div>
+  </div>
+  <div id="mp-extra" style="max-width:600px;width:100%"></div>
+</div>
+
+<!-- TEAM SELECT -->
+<div id="team-select-screen" style="display:none">
+  <div style="font-size:26px;font-weight:900;color:var(--acc);margin-bottom:4px">🏀 Choose Your Team</div>
+  <div style="font-size:12px;color:var(--t2);margin-bottom:20px" id="ts-subtitle">2025-26 NBA Season</div>
+  <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;max-width:1100px;width:100%" id="team-select-grid"></div>
+  <div style="margin-top:18px;display:flex;gap:10px;align-items:center">
+    <button class="btn btn-acc" onclick="confirmTeamSelect()" id="confirm-team-btn" disabled style="font-size:14px;padding:10px 28px">Confirm Selection →</button>
+    <span id="selected-team-label" style="font-size:12px;color:var(--t2)">No team selected</span>
+  </div>
+</div>
+
+<!-- LOTTERY -->
+<div id="lottery-screen" style="display:none">
+  <div style="font-size:26px;font-weight:900;color:var(--yellow);margin-bottom:4px">🎱 NBA Draft Lottery</div>
+  <div style="font-size:13px;color:var(--t2);margin-bottom:24px">2026 NBA Draft — Official Lottery Odds</div>
+  <div id="lottery-content" style="max-width:920px;width:100%"></div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app" style="display:none">
+<div id="sidebar">
+  <div class="sb-logo"><div class="sb-logo-text">🏀 <em>Hoops</em>GM</div></div>
+  <div class="sb-team-box"><div class="sb-tname" id="sb-name">—</div><div class="sb-trec" id="sb-rec">0-0</div></div>
+  <div class="sb-sec"><div class="sb-lbl">Season</div>
+    <div class="nv active" data-p="dash" onclick="nav('dash')"><span class="nv-ic">📊</span>Dashboard</div>
+    <div class="nv" data-p="sched" onclick="nav('sched')"><span class="nv-ic">📅</span>Schedule</div>
+    <div class="nv" data-p="stand" onclick="nav('stand')"><span class="nv-ic">🏆</span>Standings</div>
+    <div class="nv" data-p="playoffs" onclick="nav('playoffs')"><span class="nv-ic">🥊</span>Playoffs</div>
+    <div class="nv" data-p="awards" onclick="nav('awards')"><span class="nv-ic">🏅</span>Awards</div>
+  </div>
+  <div class="sb-sec"><div class="sb-lbl">My Team</div>
+    <div class="nv" data-p="roster" onclick="nav('roster')"><span class="nv-ic">👥</span>Roster</div>
+    <div class="nv" data-p="depth" onclick="nav('depth')"><span class="nv-ic">📋</span>Depth Chart</div>
+    <div class="nv" data-p="finances" onclick="nav('finances')"><span class="nv-ic">💰</span>Finances</div>
+    <div class="nv" data-p="scouting" onclick="nav('scouting')"><span class="nv-ic">🔭</span>Scouting</div>
+    <div class="nv" data-p="extensions" onclick="nav('extensions')"><span class="nv-ic">📝</span>Extensions</div>
+  </div>
+  <div class="sb-sec"><div class="sb-lbl">Moves</div>
+    <div class="nv" data-p="trade" onclick="nav('trade')"><span class="nv-ic">🔄</span>Trade Center<span class="nv-badge" id="trade-notif" style="display:none">!</span></div>
+    <div class="nv" data-p="incoming" onclick="nav('incoming')"><span class="nv-ic">📬</span>Trade Offers<span class="nv-badge" id="incoming-notif" style="display:none">!</span></div>
+    <div class="nv" data-p="fa" onclick="nav('fa')"><span class="nv-ic">✍️</span>Free Agency</div>
+    <div class="nv" data-p="draft" onclick="nav('draft')"><span class="nv-ic">🎓</span>Draft</div>
+    <div class="nv" data-p="waiver" onclick="nav('waiver')"><span class="nv-ic">📋</span>Waiver Wire</div>
+  </div>
+  <div class="sb-sec"><div class="sb-lbl">League</div>
+    <div class="nv" data-p="allp" onclick="nav('allp')"><span class="nv-ic">⭐</span>All Players</div>
+    <div class="nv" data-p="lstats" onclick="nav('lstats')"><span class="nv-ic">📈</span>League Stats</div>
+    <div class="nv" data-p="power" onclick="nav('power')"><span class="nv-ic">⚡</span>Power Rankings</div>
+    <div class="nv" data-p="history" onclick="nav('history')"><span class="nv-ic">📜</span>History</div>
+    <div class="nv" data-p="news" onclick="nav('news')"><span class="nv-ic">📰</span>News</div>
+    <div class="nv" data-p="multiplayer" onclick="nav('multiplayer')"><span class="nv-ic">🌐</span>League Hub</div>
+  </div>
+  <div class="sb-footer">
+    <div class="sb-sea-lbl">Season</div>
+    <div class="sb-sea" id="sb-sea">2025-26</div>
+    <div class="sb-phase" id="sb-ph">Regular Season</div>
+    <div id="owner-pressure-wrap" style="margin-top:6px;display:none">
+      <div style="font-size:9px;color:var(--t3);margin-bottom:2px">OWNER PRESSURE</div>
+      <div class="pressure-bar"><div class="pressure-fill" id="pressure-fill" style="width:30%;background:var(--green)"></div></div>
+    </div>
+  </div>
+</div>
+<div id="main">
+  <div class="page active" id="page-dash"></div>
+  <div class="page" id="page-sched"></div>
+  <div class="page" id="page-stand"></div>
+  <div class="page" id="page-playoffs"></div>
+  <div class="page" id="page-awards"></div>
+  <div class="page" id="page-roster"></div>
+  <div class="page" id="page-depth"></div>
+  <div class="page" id="page-finances"></div>
+  <div class="page" id="page-scouting"></div>
+  <div class="page" id="page-extensions"></div>
+  <div class="page" id="page-trade"></div>
+  <div class="page" id="page-incoming"></div>
+  <div class="page" id="page-fa"></div>
+  <div class="page" id="page-draft"></div>
+  <div class="page" id="page-waiver"></div>
+  <div class="page" id="page-allp"></div>
+  <div class="page" id="page-lstats"></div>
+  <div class="page" id="page-power"></div>
+  <div class="page" id="page-history"></div>
+  <div class="page" id="page-news"></div>
+  <div class="page" id="page-multiplayer"></div>
+</div>
+</div>
+<div id="toast"></div>
+<div id="modal-root"></div>
+<script>
+// ════════════════════════════════════════════════════════════════
+// SUPABASE CONFIG — Replace with your project credentials
+// ════════════════════════════════════════════════════════════════
+const SUPABASE_URL = 'https://foxpmrbzxquiyfbbjyqu.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZveHBtcmJ6eHF1aXlmYmJqeXF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1OTAyNTUsImV4cCI6MjA5NjE2NjI1NX0.Nd0UA6Vx_Ey8nZc0F1Oecof04t06pAF_1q1NawvVUZQ';
+
+// ════════════════════════════════════════════════════════════════
+// ACCURATE 2025-26 NBA ROSTERS — Post Trade Deadline Feb 5 2026
+// Sources: NBA.com, ESPN Trade Tracker, Hoops Rumors
+// ════════════════════════════════════════════════════════════════
+const TEAMS_DATA=[
+{id:0,name:"Atlanta Hawks",abbr:"ATL",conf:"East",div:"Southeast",players:[
+// Post-deadline: Got Kuminga + Hield from GSW for Porzingis. Traded Trae Young to WAS for McCollum+Kispert
+{n:"Jalen Johnson",pos:"SF",age:23,ovr:85,pot:91,pts:25.5,reb:6.4,ast:8.0,stl:1.5,blk:0.8,fgp:.508,tpp:.381,sal:28.0,yrs:3},
+{n:"Jonathan Kuminga",pos:"SF",age:22,ovr:80,pot:87,pts:19.8,reb:5.8,ast:2.8,stl:0.9,blk:0.6,fgp:.498,tpp:.321,sal:29.0,yrs:3},
+{n:"Dyson Daniels",pos:"SG",age:22,ovr:79,pot:87,pts:16.8,reb:4.3,ast:3.5,stl:2.4,blk:0.5,fgp:.473,tpp:.355,sal:18.0,yrs:2},
+{n:"Onyeka Okongwu",pos:"C",age:24,ovr:78,pot:83,pts:14.2,reb:8.1,ast:1.8,stl:1.1,blk:1.6,fgp:.598,tpp:.000,sal:14.0,yrs:2},
+{n:"CJ McCollum",pos:"SG",age:34,ovr:76,pot:76,pts:17.8,reb:3.8,ast:5.8,stl:0.8,blk:0.3,fgp:.471,tpp:.398,sal:33.0,yrs:1},
+{n:"Buddy Hield",pos:"SG",age:33,ovr:72,pot:72,pts:12.8,reb:3.5,ast:2.4,stl:0.8,blk:0.2,fgp:.461,tpp:.421,sal:10.0,yrs:1},
+{n:"Corey Kispert",pos:"SF",age:26,ovr:70,pot:74,pts:11.4,reb:3.8,ast:2.2,stl:0.7,blk:0.3,fgp:.461,tpp:.398,sal:6.5,yrs:2},
+{n:"Zaccharie Risacher",pos:"SF",age:20,ovr:74,pot:88,pts:13.2,reb:4.1,ast:1.8,stl:0.9,blk:0.5,fgp:.461,tpp:.348,sal:7.5,yrs:2},
+{n:"Asa Newell",pos:"PF",age:20,ovr:69,pot:85,pts:8.2,reb:4.8,ast:1.1,stl:0.7,blk:0.9,fgp:.512,tpp:.290,sal:4.5,yrs:3},
+{n:"Jock Landale",pos:"C",age:30,ovr:63,pot:64,pts:5.8,reb:5.2,ast:1.2,stl:0.4,blk:0.6,fgp:.551,tpp:.000,sal:3.0,yrs:1},
+{n:"Vit Krejci",pos:"PG",age:23,ovr:66,pot:74,pts:7.1,reb:2.8,ast:3.5,stl:0.9,blk:0.2,fgp:.435,tpp:.371,sal:3.8,yrs:2},
+{n:"Mouhamed Gueye",pos:"PF",age:22,ovr:65,pot:79,pts:6.2,reb:4.5,ast:0.9,stl:0.6,blk:1.1,fgp:.488,tpp:.312,sal:3.0,yrs:2},
+{n:"Vince Williams Jr.",pos:"SG",age:23,ovr:64,pot:73,pts:6.8,reb:2.8,ast:2.2,stl:0.9,blk:0.3,fgp:.441,tpp:.345,sal:3.2,yrs:2}
+]},
+{id:1,name:"Boston Celtics",abbr:"BOS",conf:"East",div:"Atlantic",players:[
+// Got Vucevic from CHI for Simons
+{n:"Jayson Tatum",pos:"SF",age:27,ovr:95,pot:95,pts:28.4,reb:9.1,ast:5.2,stl:1.1,blk:0.6,fgp:.473,tpp:.381,sal:51.0,yrs:4},
+{n:"Jaylen Brown",pos:"SG",age:28,ovr:89,pot:89,pts:23.8,reb:5.4,ast:3.5,stl:1.2,blk:0.5,fgp:.481,tpp:.354,sal:48.0,yrs:4},
+{n:"Derrick White",pos:"PG",age:30,ovr:82,pot:82,pts:15.6,reb:4.1,ast:5.2,stl:1.5,blk:1.2,fgp:.445,tpp:.381,sal:22.0,yrs:2},
+{n:"Nikola Vucevic",pos:"C",age:34,ovr:76,pot:76,pts:16.8,reb:10.2,ast:2.8,stl:0.7,blk:0.8,fgp:.498,tpp:.345,sal:22.0,yrs:1},
+{n:"Payton Pritchard",pos:"PG",age:27,ovr:78,pot:79,pts:14.8,reb:3.2,ast:4.1,stl:1.1,blk:0.2,fgp:.448,tpp:.421,sal:12.0,yrs:2},
+{n:"Sam Hauser",pos:"SF",age:27,ovr:75,pot:76,pts:12.2,reb:3.8,ast:1.8,stl:0.6,blk:0.3,fgp:.461,tpp:.432,sal:8.5,yrs:2},
+{n:"Al Horford",pos:"C",age:38,ovr:72,pot:72,pts:9.4,reb:7.8,ast:3.2,stl:0.7,blk:1.2,fgp:.508,tpp:.371,sal:6.5,yrs:1},
+{n:"Jordan Walsh",pos:"SF",age:21,ovr:67,pot:80,pts:7.2,reb:3.1,ast:1.2,stl:1.0,blk:0.4,fgp:.431,tpp:.318,sal:3.2,yrs:2},
+{n:"Neemias Queta",pos:"C",age:25,ovr:68,pot:72,pts:7.8,reb:6.2,ast:1.1,stl:0.5,blk:1.4,fgp:.582,tpp:.000,sal:4.0,yrs:2},
+{n:"Baylor Scheierman",pos:"SG",age:24,ovr:68,pot:75,pts:8.1,reb:2.9,ast:2.5,stl:0.7,blk:0.2,fgp:.428,tpp:.387,sal:3.8,yrs:2},
+{n:"Xavier Tillman Sr.",pos:"PF",age:25,ovr:66,pot:68,pts:5.8,reb:5.4,ast:1.2,stl:0.7,blk:0.8,fgp:.524,tpp:.000,sal:3.5,yrs:1},
+{n:"Josh Minott",pos:"SF",age:23,ovr:64,pot:74,pts:5.2,reb:3.1,ast:0.8,stl:0.9,blk:0.4,fgp:.468,tpp:.331,sal:2.8,yrs:2},
+{n:"Hugo Gonzalez",pos:"SF",age:19,ovr:70,pot:88,pts:9.1,reb:3.8,ast:2.2,stl:0.8,blk:0.5,fgp:.451,tpp:.361,sal:5.2,yrs:3}
+]},
+{id:2,name:"Brooklyn Nets",abbr:"BKN",conf:"East",div:"Atlantic",players:[
+{n:"Cam Thomas",pos:"SG",age:23,ovr:84,pot:90,pts:24.5,reb:3.8,ast:4.1,stl:0.9,blk:0.3,fgp:.461,tpp:.359,sal:26.0,yrs:3},
+{n:"Egor Demin",pos:"PG",age:19,ovr:73,pot:91,pts:11.2,reb:4.8,ast:6.1,stl:0.8,blk:0.5,fgp:.421,tpp:.342,sal:5.8,yrs:3},
+{n:"Nic Claxton",pos:"C",age:26,ovr:79,pot:80,pts:14.2,reb:9.1,ast:2.8,stl:0.7,blk:2.1,fgp:.608,tpp:.000,sal:20.0,yrs:2},
+{n:"Nolan Traore",pos:"PG",age:19,ovr:71,pot:90,pts:10.8,reb:3.2,ast:5.8,stl:1.1,blk:0.3,fgp:.408,tpp:.321,sal:5.5,yrs:3},
+{n:"Noah Clowney",pos:"PF",age:21,ovr:69,pot:80,pts:9.8,reb:5.8,ast:1.2,stl:0.8,blk:1.1,fgp:.481,tpp:.312,sal:4.8,yrs:2},
+{n:"Terance Mann",pos:"SF",age:28,ovr:72,pot:73,pts:10.2,reb:4.1,ast:2.8,stl:0.8,blk:0.3,fgp:.468,tpp:.371,sal:8.0,yrs:2},
+{n:"Day'Ron Sharpe",pos:"C",age:23,ovr:66,pot:73,pts:7.4,reb:7.2,ast:1.1,stl:0.5,blk:1.2,fgp:.558,tpp:.000,sal:3.8,yrs:2},
+{n:"Ben Saraf",pos:"PG",age:20,ovr:68,pot:83,pts:9.4,reb:3.1,ast:4.8,stl:0.9,blk:0.2,fgp:.425,tpp:.338,sal:4.2,yrs:3},
+{n:"Drake Powell",pos:"SF",age:20,ovr:68,pot:83,pts:8.5,reb:3.8,ast:1.5,stl:0.9,blk:0.5,fgp:.452,tpp:.335,sal:4.5,yrs:3},
+{n:"Ziaire Williams",pos:"SF",age:23,ovr:65,pot:75,pts:7.2,reb:3.1,ast:1.8,stl:0.8,blk:0.4,fgp:.431,tpp:.348,sal:3.5,yrs:2},
+{n:"Tyrese Martin",pos:"SG",age:25,ovr:65,pot:72,pts:7.1,reb:3.2,ast:1.8,stl:0.7,blk:0.2,fgp:.441,tpp:.358,sal:3.0,yrs:2},
+{n:"Jalen Wilson",pos:"SF",age:24,ovr:65,pot:73,pts:7.8,reb:4.2,ast:1.4,stl:0.6,blk:0.4,fgp:.435,tpp:.341,sal:3.2,yrs:2},
+{n:"Michael Porter Jr.",pos:"SF",age:27,ovr:80,pot:80,pts:17.8,reb:5.8,ast:1.8,stl:0.7,blk:0.5,fgp:.491,tpp:.421,sal:29.0,yrs:1}
+]},
+{id:3,name:"Charlotte Hornets",abbr:"CHA",conf:"East",div:"Southeast",players:[
+// Got Malaki Branham from WAS in Davis trade
+{n:"LaMelo Ball",pos:"PG",age:24,ovr:87,pot:90,pts:24.8,reb:5.8,ast:8.5,stl:1.8,blk:0.4,fgp:.451,tpp:.364,sal:35.0,yrs:3},
+{n:"Miles Bridges",pos:"SF",age:27,ovr:81,pot:82,pts:22.1,reb:6.8,ast:3.2,stl:1.1,blk:0.5,fgp:.471,tpp:.342,sal:21.0,yrs:2},
+{n:"Brandon Miller",pos:"SF",age:22,ovr:77,pot:87,pts:17.2,reb:4.5,ast:2.8,stl:0.8,blk:0.6,fgp:.451,tpp:.378,sal:9.2,yrs:2},
+{n:"Kon Knueppel",pos:"SG",age:19,ovr:78,pot:90,pts:16.5,reb:4.1,ast:2.8,stl:0.8,blk:0.4,fgp:.462,tpp:.418,sal:6.8,yrs:3},
+{n:"Collin Sexton",pos:"PG",age:26,ovr:74,pot:75,pts:13.8,reb:2.2,ast:3.8,stl:1.0,blk:0.2,fgp:.468,tpp:.381,sal:10.0,yrs:1},
+{n:"Malaki Branham",pos:"SG",age:23,ovr:67,pot:77,pts:9.8,reb:3.2,ast:2.2,stl:0.8,blk:0.3,fgp:.448,tpp:.358,sal:4.5,yrs:2},
+{n:"Tidjane Salaun",pos:"SF",age:20,ovr:69,pot:83,pts:9.8,reb:4.1,ast:1.8,stl:0.8,blk:0.5,fgp:.441,tpp:.328,sal:4.8,yrs:3},
+{n:"Moussa Diabate",pos:"C",age:23,ovr:68,pot:78,pts:9.2,reb:7.8,ast:1.2,stl:0.6,blk:1.4,fgp:.571,tpp:.000,sal:4.2,yrs:2},
+{n:"Liam McNeeley",pos:"SF",age:20,ovr:71,pot:84,pts:12.4,reb:4.2,ast:1.8,stl:0.7,blk:0.4,fgp:.448,tpp:.388,sal:5.5,yrs:3},
+{n:"Tre Mann",pos:"SG",age:24,ovr:68,pot:74,pts:9.4,reb:2.8,ast:2.8,stl:0.7,blk:0.2,fgp:.441,tpp:.358,sal:4.5,yrs:2},
+{n:"Ryan Kalkbrenner",pos:"C",age:24,ovr:66,pot:74,pts:7.2,reb:6.8,ast:0.8,stl:0.4,blk:1.5,fgp:.572,tpp:.290,sal:3.5,yrs:2},
+{n:"Sion James",pos:"SF",age:24,ovr:63,pot:71,pts:5.8,reb:3.2,ast:1.8,stl:0.9,blk:0.3,fgp:.438,tpp:.318,sal:2.8,yrs:2},
+{n:"Tyus Jones",pos:"PG",age:30,ovr:71,pot:72,pts:9.8,reb:2.8,ast:7.2,stl:1.1,blk:0.2,fgp:.481,tpp:.361,sal:9.0,yrs:1}
+]},
+{id:4,name:"Chicago Bulls",abbr:"CHI",conf:"East",div:"Central",players:[
+// Got Simons from BOS for Vucevic. Traded White to CHA. Got Conley+Ivey in 3-team. Dario Saric. Got Yabusele from NYK for Terry
+{n:"Zach LaVine",pos:"SG",age:30,ovr:85,pot:85,pts:22.8,reb:4.8,ast:4.2,stl:0.8,blk:0.4,fgp:.468,tpp:.381,sal:38.0,yrs:2},
+{n:"Josh Giddey",pos:"PG",age:22,ovr:80,pot:87,pts:17.4,reb:7.2,ast:8.4,stl:1.1,blk:0.4,fgp:.451,tpp:.318,sal:16.0,yrs:2},
+{n:"Anfernee Simons",pos:"SG",age:26,ovr:80,pot:81,pts:18.4,reb:2.8,ast:4.2,stl:0.9,blk:0.2,fgp:.452,tpp:.393,sal:24.0,yrs:2},
+{n:"Matas Buzelis",pos:"PF",age:21,ovr:74,pot:86,pts:13.2,reb:5.4,ast:1.8,stl:0.9,blk:0.8,fgp:.452,tpp:.338,sal:6.5,yrs:3},
+{n:"Mike Conley",pos:"PG",age:38,ovr:68,pot:68,pts:8.8,reb:2.8,ast:5.2,stl:1.0,blk:0.2,fgp:.451,tpp:.381,sal:10.0,yrs:1},
+{n:"Jaden Ivey",pos:"PG",age:23,ovr:73,pot:81,pts:14.2,reb:3.5,ast:5.8,stl:1.2,blk:0.3,fgp:.441,tpp:.338,sal:8.5,yrs:2},
+{n:"Noa Essengue",pos:"PF",age:19,ovr:70,pot:87,pts:10.2,reb:5.1,ast:1.4,stl:0.7,blk:0.8,fgp:.461,tpp:.325,sal:5.1,yrs:3},
+{n:"Guerschon Yabusele",pos:"PF",age:30,ovr:69,pot:70,pts:10.2,reb:5.1,ast:1.8,stl:0.7,blk:0.6,fgp:.498,tpp:.378,sal:5.5,yrs:1},
+{n:"Dario Saric",pos:"PF",age:32,ovr:66,pot:67,pts:8.8,reb:5.2,ast:2.1,stl:0.6,blk:0.5,fgp:.471,tpp:.358,sal:5.0,yrs:1},
+{n:"Emanuel Miller",pos:"SF",age:23,ovr:66,pot:74,pts:8.4,reb:4.8,ast:1.8,stl:0.9,blk:0.5,fgp:.491,tpp:.318,sal:3.8,yrs:2},
+{n:"Ayo Dosunmu",pos:"PG",age:25,ovr:72,pot:74,pts:11.2,reb:3.5,ast:4.2,stl:1.1,blk:0.3,fgp:.451,tpp:.368,sal:8.0,yrs:2},
+{n:"Tre Jones",pos:"PG",age:26,ovr:68,pot:70,pts:8.8,reb:2.8,ast:5.4,stl:1.0,blk:0.2,fgp:.451,tpp:.321,sal:5.0,yrs:2},
+{n:"Julian Phillips",pos:"SF",age:22,ovr:64,pot:75,pts:6.8,reb:3.8,ast:1.2,stl:0.7,blk:0.4,fgp:.451,tpp:.312,sal:3.0,yrs:2}
+]},
+{id:5,name:"Cleveland Cavaliers",abbr:"CLE",conf:"East",div:"Central",players:[
+// Got James Harden from LAC for Darius Garland + 2nd. Got Dennis Schroder + Keon Ellis from 3-team. Traded De'Andre Hunter to SAC
+{n:"Donovan Mitchell",pos:"SG",age:28,ovr:90,pot:90,pts:27.8,reb:4.8,ast:5.8,stl:1.8,blk:0.5,fgp:.481,tpp:.381,sal:34.0,yrs:3},
+{n:"Evan Mobley",pos:"C",age:24,ovr:88,pot:92,pts:20.4,reb:9.8,ast:2.8,stl:1.2,blk:2.4,fgp:.558,tpp:.341,sal:28.0,yrs:3},
+{n:"James Harden",pos:"PG",age:36,ovr:85,pot:85,pts:20.8,reb:5.8,ast:9.8,stl:1.2,blk:0.5,fgp:.448,tpp:.371,sal:35.0,yrs:1},
+{n:"Jarrett Allen",pos:"C",age:27,ovr:80,pot:81,pts:14.2,reb:10.8,ast:1.8,stl:0.7,blk:1.4,fgp:.638,tpp:.000,sal:20.0,yrs:2},
+{n:"Keon Ellis",pos:"SG",age:24,ovr:70,pot:77,pts:11.2,reb:3.5,ast:2.8,stl:1.4,blk:0.4,fgp:.461,tpp:.358,sal:6.5,yrs:2},
+{n:"Dennis Schroder",pos:"PG",age:33,ovr:72,pot:73,pts:12.8,reb:2.8,ast:6.2,stl:1.1,blk:0.3,fgp:.441,tpp:.338,sal:7.5,yrs:1},
+{n:"Sam Merrill",pos:"SG",age:29,ovr:68,pot:69,pts:8.8,reb:2.4,ast:1.8,stl:0.7,blk:0.1,fgp:.441,tpp:.408,sal:5.5,yrs:1},
+{n:"Jaylon Tyson",pos:"SG",age:23,ovr:67,pot:76,pts:8.4,reb:3.1,ast:2.2,stl:0.8,blk:0.3,fgp:.448,tpp:.352,sal:4.2,yrs:3},
+{n:"Tyrese Proctor",pos:"PG",age:22,ovr:66,pot:78,pts:7.2,reb:2.8,ast:4.2,stl:1.0,blk:0.3,fgp:.432,tpp:.351,sal:3.5,yrs:3},
+{n:"Dean Wade",pos:"PF",age:28,ovr:65,pot:67,pts:7.4,reb:4.1,ast:1.4,stl:0.6,blk:0.5,fgp:.462,tpp:.388,sal:4.0,yrs:1},
+{n:"Craig Porter Jr.",pos:"PG",age:25,ovr:65,pot:71,pts:6.8,reb:2.5,ast:3.8,stl:0.9,blk:0.2,fgp:.428,tpp:.338,sal:3.0,yrs:2},
+{n:"Thomas Bryant",pos:"C",age:28,ovr:65,pot:67,pts:7.8,reb:6.5,ast:1.1,stl:0.4,blk:0.8,fgp:.578,tpp:.328,sal:4.0,yrs:1},
+{n:"Caris LeVert",pos:"SG",age:31,ovr:74,pot:74,pts:13.8,reb:3.2,ast:4.1,stl:0.9,blk:0.3,fgp:.451,tpp:.365,sal:11.0,yrs:1}
+]},
+{id:6,name:"Dallas Mavericks",abbr:"DAL",conf:"West",div:"Southwest",players:[
+// Lost Anthony Davis, Russell, Hardy to WAS. Got Middleton, AJ Johnson, Marvin Bagley, Tyus Jones, OKC 2026 1st, GSW 2030 1st
+{n:"Kyrie Irving",pos:"PG",age:33,ovr:87,pot:87,pts:24.8,reb:4.8,ast:6.8,stl:1.2,blk:0.4,fgp:.481,tpp:.381,sal:36.0,yrs:2},
+{n:"Cooper Flagg",pos:"SF",age:19,ovr:82,pot:97,pts:21.0,reb:6.7,ast:4.5,stl:1.5,blk:1.2,fgp:.462,tpp:.338,sal:7.8,yrs:3},
+{n:"Khris Middleton",pos:"SF",age:34,ovr:78,pot:78,pts:14.8,reb:4.8,ast:4.2,stl:0.8,blk:0.4,fgp:.468,tpp:.378,sal:30.0,yrs:1},
+{n:"P.J. Washington",pos:"PF",age:27,ovr:77,pot:78,pts:14.8,reb:6.8,ast:2.4,stl:1.1,blk:0.8,fgp:.468,tpp:.371,sal:15.0,yrs:2},
+{n:"Dereck Lively II",pos:"C",age:21,ovr:75,pot:87,pts:11.2,reb:8.8,ast:1.8,stl:0.6,blk:2.1,fgp:.628,tpp:.000,sal:6.8,yrs:3},
+{n:"Marvin Bagley III",pos:"PF",age:26,ovr:70,pot:73,pts:12.8,reb:7.8,ast:1.5,stl:0.6,blk:0.9,fgp:.538,tpp:.000,sal:7.5,yrs:2},
+{n:"AJ Johnson",pos:"PG",age:20,ovr:67,pot:82,pts:9.4,reb:3.2,ast:5.2,stl:1.0,blk:0.3,fgp:.421,tpp:.318,sal:4.8,yrs:3},
+{n:"Max Christie",pos:"SG",age:23,ovr:68,pot:76,pts:9.2,reb:3.2,ast:1.8,stl:0.9,blk:0.3,fgp:.451,tpp:.378,sal:4.5,yrs:2},
+{n:"Klay Thompson",pos:"SG",age:35,ovr:76,pot:76,pts:14.8,reb:3.8,ast:2.4,stl:0.8,blk:0.4,fgp:.458,tpp:.408,sal:24.0,yrs:1},
+{n:"Caleb Martin",pos:"SF",age:29,ovr:73,pot:74,pts:10.2,reb:4.8,ast:2.2,stl:1.1,blk:0.4,fgp:.468,tpp:.348,sal:9.0,yrs:2},
+{n:"Daniel Gafford",pos:"C",age:26,ovr:75,pot:76,pts:12.4,reb:7.8,ast:1.4,stl:0.7,blk:2.2,fgp:.728,tpp:.000,sal:13.0,yrs:2},
+{n:"Naji Marshall",pos:"SF",age:27,ovr:68,pot:71,pts:8.8,reb:3.8,ast:2.4,stl:1.0,blk:0.4,fgp:.468,tpp:.341,sal:5.0,yrs:2},
+{n:"Kyshawn George",pos:"SF",age:22,ovr:69,pot:82,pts:10.8,reb:3.8,ast:2.5,stl:0.9,blk:0.5,fgp:.448,tpp:.348,sal:5.5,yrs:3}
+]},
+{id:7,name:"Denver Nuggets",abbr:"DEN",conf:"West",div:"Northwest",players:[
+{n:"Nikola Jokic",pos:"C",age:30,ovr:98,pot:98,pts:28.9,reb:12.9,ast:10.7,stl:1.4,blk:0.8,fgp:.578,tpp:.401,sal:51.0,yrs:3},
+{n:"Jamal Murray",pos:"PG",age:28,ovr:87,pot:87,pts:21.8,reb:4.2,ast:6.8,stl:1.1,blk:0.4,fgp:.481,tpp:.381,sal:32.0,yrs:3},
+{n:"Aaron Gordon",pos:"PF",age:30,ovr:82,pot:82,pts:16.8,reb:6.8,ast:3.8,stl:1.1,blk:0.8,fgp:.521,tpp:.341,sal:22.0,yrs:2},
+{n:"Michael Porter Jr.",pos:"SF",age:27,ovr:80,pot:80,pts:16.8,reb:5.8,ast:1.8,stl:0.7,blk:0.5,fgp:.491,tpp:.421,sal:29.0,yrs:3},
+{n:"Cam Johnson",pos:"SF",age:28,ovr:79,pot:80,pts:15.8,reb:4.8,ast:2.4,stl:0.8,blk:0.4,fgp:.478,tpp:.398,sal:20.0,yrs:2},
+{n:"Christian Braun",pos:"SG",age:24,ovr:73,pot:79,pts:11.8,reb:3.8,ast:2.2,stl:0.9,blk:0.3,fgp:.498,tpp:.358,sal:8.0,yrs:2},
+{n:"DaRon Holmes II",pos:"PF",age:22,ovr:73,pot:83,pts:12.4,reb:6.1,ast:1.8,stl:0.7,blk:1.4,fgp:.578,tpp:.298,sal:6.5,yrs:3},
+{n:"Jonas Valanciunas",pos:"C",age:33,ovr:73,pot:73,pts:12.8,reb:9.8,ast:2.4,stl:0.5,blk:0.8,fgp:.538,tpp:.318,sal:9.0,yrs:1},
+{n:"Peyton Watson",pos:"SF",age:23,ovr:69,pot:79,pts:9.1,reb:3.8,ast:1.5,stl:1.0,blk:0.7,fgp:.468,tpp:.332,sal:4.8,yrs:2},
+{n:"Tim Hardaway Jr.",pos:"SG",age:33,ovr:68,pot:68,pts:10.2,reb:2.8,ast:2.2,stl:0.7,blk:0.2,fgp:.441,tpp:.381,sal:8.0,yrs:1},
+{n:"Julian Strawther",pos:"SG",age:24,ovr:66,pot:75,pts:7.8,reb:2.8,ast:1.5,stl:0.6,blk:0.3,fgp:.451,tpp:.371,sal:3.8,yrs:2},
+{n:"Zeke Nnaji",pos:"PF",age:24,ovr:65,pot:73,pts:7.1,reb:5.8,ast:1.1,stl:0.5,blk:0.8,fgp:.548,tpp:.290,sal:3.5,yrs:2},
+{n:"Russell Westbrook",pos:"PG",age:36,ovr:66,pot:66,pts:8.8,reb:5.2,ast:6.4,stl:1.2,blk:0.4,fgp:.431,tpp:.298,sal:3.0,yrs:1}
+]},
+{id:8,name:"Golden State Warriors",abbr:"GSW",conf:"West",div:"Pacific",players:[
+// Got Kristaps Porzingis from BOS/ATL chain; lost Kuminga+Hield to ATL
+{n:"Stephen Curry",pos:"PG",age:37,ovr:93,pot:93,pts:26.8,reb:5.1,ast:6.8,stl:1.2,blk:0.2,fgp:.478,tpp:.418,sal:55.0,yrs:2},
+{n:"Kristaps Porzingis",pos:"PF",age:30,ovr:83,pot:83,pts:19.8,reb:7.2,ast:2.1,stl:0.8,blk:1.9,fgp:.483,tpp:.378,sal:30.0,yrs:1},
+{n:"Andrew Wiggins",pos:"SF",age:30,ovr:76,pot:76,pts:16.8,reb:5.4,ast:2.8,stl:1.0,blk:0.5,fgp:.468,tpp:.358,sal:24.0,yrs:2},
+{n:"Draymond Green",pos:"PF",age:35,ovr:80,pot:80,pts:8.8,reb:7.8,ast:8.4,stl:1.2,blk:0.8,fgp:.448,tpp:.278,sal:22.0,yrs:2},
+{n:"Brandin Podziemski",pos:"SG",age:22,ovr:73,pot:81,pts:12.4,reb:4.8,ast:3.8,stl:1.0,blk:0.3,fgp:.448,tpp:.368,sal:6.5,yrs:2},
+{n:"Moses Moody",pos:"SG",age:23,ovr:70,pot:78,pts:10.2,reb:3.8,ast:2.1,stl:0.8,blk:0.3,fgp:.461,tpp:.381,sal:5.0,yrs:2},
+{n:"Gary Payton II",pos:"SG",age:32,ovr:68,pot:68,pts:7.4,reb:3.1,ast:2.8,stl:1.5,blk:0.4,fgp:.501,tpp:.348,sal:9.0,yrs:1},
+{n:"Trayce Jackson-Davis",pos:"C",age:25,ovr:68,pot:74,pts:9.2,reb:7.2,ast:2.1,stl:0.7,blk:1.2,fgp:.598,tpp:.000,sal:5.0,yrs:2},
+{n:"De'Anthony Melton",pos:"SG",age:27,ovr:67,pot:69,pts:7.8,reb:3.2,ast:2.8,stl:1.3,blk:0.3,fgp:.421,tpp:.358,sal:5.5,yrs:2},
+{n:"Quinten Post",pos:"C",age:24,ovr:65,pot:73,pts:7.1,reb:5.8,ast:1.4,stl:0.4,blk:0.8,fgp:.548,tpp:.351,sal:3.2,yrs:3},
+{n:"Gui Santos",pos:"SF",age:24,ovr:63,pot:73,pts:5.8,reb:3.2,ast:1.5,stl:0.7,blk:0.3,fgp:.451,tpp:.331,sal:2.5,yrs:2},
+{n:"Jimmy Butler",pos:"SF",age:36,ovr:84,pot:84,pts:20.8,reb:5.1,ast:4.8,stl:1.8,blk:0.5,fgp:.491,tpp:.281,sal:51.0,yrs:1},
+{n:"Al Horford",pos:"C",age:38,ovr:70,pot:70,pts:8.4,reb:6.8,ast:2.8,stl:0.6,blk:1.1,fgp:.498,tpp:.361,sal:6.5,yrs:1}
+]},
+{id:9,name:"Houston Rockets",abbr:"HOU",conf:"West",div:"Southwest",players:[
+{n:"Alperen Sengun",pos:"C",age:23,ovr:87,pot:93,pts:23.8,reb:10.2,ast:4.8,stl:0.9,blk:1.8,fgp:.558,tpp:.291,sal:31.0,yrs:3},
+{n:"Kevin Durant",pos:"SF",age:37,ovr:94,pot:94,pts:30.2,reb:7.1,ast:4.4,stl:0.9,blk:1.1,fgp:.521,tpp:.411,sal:51.0,yrs:1},
+{n:"Jabari Smith Jr.",pos:"PF",age:22,ovr:78,pot:86,pts:16.8,reb:7.8,ast:1.8,stl:0.9,blk:1.4,fgp:.468,tpp:.368,sal:9.2,yrs:2},
+{n:"Amen Thompson",pos:"SF",age:22,ovr:78,pot:88,pts:16.8,reb:8.8,ast:3.8,stl:1.5,blk:0.7,fgp:.521,tpp:.281,sal:9.2,yrs:2},
+{n:"Reed Sheppard",pos:"PG",age:21,ovr:73,pot:84,pts:12.8,reb:2.8,ast:3.8,stl:1.2,blk:0.3,fgp:.441,tpp:.398,sal:6.2,yrs:3},
+{n:"Tari Eason",pos:"PF",age:24,ovr:73,pot:80,pts:12.8,reb:6.1,ast:1.8,stl:1.2,blk:0.8,fgp:.501,tpp:.318,sal:8.5,yrs:2},
+{n:"Dorian Finney-Smith",pos:"SF",age:32,ovr:69,pot:70,pts:9.8,reb:4.1,ast:1.8,stl:1.0,blk:0.3,fgp:.441,tpp:.371,sal:8.0,yrs:2},
+{n:"Cam Christie",pos:"SG",age:21,ovr:65,pot:78,pts:7.4,reb:2.8,ast:1.8,stl:0.7,blk:0.2,fgp:.441,tpp:.371,sal:3.5,yrs:3},
+{n:"Josh Okogie",pos:"SG",age:27,ovr:65,pot:68,pts:7.8,reb:3.5,ast:2.2,stl:1.2,blk:0.4,fgp:.448,tpp:.318,sal:4.5,yrs:1},
+{n:"Aaron Holiday",pos:"PG",age:28,ovr:66,pot:68,pts:7.4,reb:2.2,ast:3.5,stl:0.9,blk:0.2,fgp:.428,tpp:.358,sal:4.0,yrs:1},
+{n:"Steven Adams",pos:"C",age:32,ovr:66,pot:66,pts:7.2,reb:9.8,ast:2.8,stl:0.8,blk:0.5,fgp:.568,tpp:.000,sal:7.0,yrs:1},
+{n:"Jeff Green",pos:"PF",age:38,ovr:62,pot:62,pts:5.8,reb:3.8,ast:1.2,stl:0.5,blk:0.5,fgp:.468,tpp:.341,sal:3.5,yrs:1},
+{n:"Jae'Sean Tate",pos:"SF",age:30,ovr:70,pot:71,pts:10.2,reb:4.8,ast:2.5,stl:1.0,blk:0.4,fgp:.481,tpp:.318,sal:7.5,yrs:1}
+]},
+{id:10,name:"Indiana Pacers",abbr:"IND",conf:"East",div:"Central",players:[
+// Got Ivica Zubac from LAC; Haliburton out injured most of season
+{n:"Tyrese Haliburton",pos:"PG",age:25,ovr:89,pot:90,pts:20.4,reb:4.8,ast:10.8,stl:1.8,blk:0.5,fgp:.478,tpp:.401,sal:45.0,yrs:4},
+{n:"Pascal Siakam",pos:"PF",age:31,ovr:87,pot:87,pts:23.8,reb:7.8,ast:4.8,stl:1.1,blk:0.8,fgp:.488,tpp:.318,sal:37.0,yrs:2},
+{n:"Ivica Zubac",pos:"C",age:28,ovr:77,pot:78,pts:13.8,reb:10.8,ast:1.8,stl:0.5,blk:1.2,fgp:.638,tpp:.000,sal:15.0,yrs:2},
+{n:"Bennedict Mathurin",pos:"SG",age:23,ovr:76,pot:83,pts:16.8,reb:4.8,ast:2.4,stl:0.8,blk:0.4,fgp:.458,tpp:.348,sal:9.8,yrs:2},
+{n:"Andrew Nembhard",pos:"PG",age:25,ovr:77,pot:82,pts:12.8,reb:3.8,ast:6.8,stl:1.1,blk:0.4,fgp:.451,tpp:.361,sal:11.0,yrs:2},
+{n:"Myles Turner",pos:"C",age:29,ovr:80,pot:80,pts:15.8,reb:7.4,ast:1.8,stl:0.8,blk:2.8,fgp:.518,tpp:.371,sal:19.0,yrs:2},
+{n:"Ben Sheppard",pos:"SG",age:24,ovr:73,pot:81,pts:12.8,reb:4.1,ast:2.4,stl:0.8,blk:0.4,fgp:.451,tpp:.388,sal:7.5,yrs:3},
+{n:"Aaron Nesmith",pos:"SF",age:25,ovr:72,pot:75,pts:12.4,reb:4.8,ast:1.8,stl:0.9,blk:0.4,fgp:.468,tpp:.361,sal:7.0,yrs:2},
+{n:"Jarace Walker",pos:"PF",age:22,ovr:70,pot:82,pts:10.2,reb:5.4,ast:1.8,stl:0.8,blk:1.0,fgp:.481,tpp:.318,sal:5.2,yrs:2},
+{n:"Obi Toppin",pos:"PF",age:27,ovr:70,pot:71,pts:10.8,reb:5.2,ast:1.8,stl:0.6,blk:0.4,fgp:.518,tpp:.338,sal:7.0,yrs:1},
+{n:"Isaiah Jackson",pos:"C",age:24,ovr:67,pot:77,pts:8.2,reb:7.1,ast:1.1,stl:0.6,blk:1.8,fgp:.578,tpp:.000,sal:4.5,yrs:2},
+{n:"T.J. McConnell",pos:"PG",age:33,ovr:66,pot:66,pts:7.8,reb:2.8,ast:5.1,stl:1.4,blk:0.2,fgp:.501,tpp:.298,sal:5.5,yrs:1},
+{n:"Johnny Furphy",pos:"SF",age:22,ovr:65,pot:77,pts:7.2,reb:3.5,ast:1.5,stl:0.7,blk:0.4,fgp:.451,tpp:.358,sal:3.5,yrs:3}
+]},
+{id:11,name:"LA Clippers",abbr:"LAC",conf:"West",div:"Pacific",players:[
+// Got Darius Garland from CLE for Harden. Lost Zubac to IND
+{n:"Kawhi Leonard",pos:"SF",age:34,ovr:90,pot:90,pts:23.8,reb:6.4,ast:3.8,stl:2.0,blk:0.8,fgp:.498,tpp:.398,sal:49.0,yrs:2},
+{n:"Darius Garland",pos:"PG",age:26,ovr:84,pot:84,pts:22.8,reb:3.8,ast:8.8,stl:1.2,blk:0.3,fgp:.461,tpp:.381,sal:38.0,yrs:1},
+{n:"Bradley Beal",pos:"SG",age:32,ovr:78,pot:78,pts:18.4,reb:4.1,ast:4.8,stl:1.1,blk:0.4,fgp:.468,tpp:.348,sal:46.0,yrs:1},
+{n:"Norman Powell",pos:"SG",age:32,ovr:78,pot:78,pts:18.8,reb:3.8,ast:2.8,stl:1.0,blk:0.3,fgp:.488,tpp:.401,sal:22.0,yrs:2},
+{n:"John Collins",pos:"PF",age:27,ovr:75,pot:76,pts:14.8,reb:7.4,ast:2.2,stl:0.8,blk:0.8,fgp:.508,tpp:.348,sal:16.0,yrs:2},
+{n:"Bogdan Bogdanovic",pos:"SG",age:33,ovr:73,pot:73,pts:13.8,reb:3.2,ast:3.5,stl:0.8,blk:0.2,fgp:.451,tpp:.395,sal:11.0,yrs:1},
+{n:"Kris Dunn",pos:"PG",age:30,ovr:69,pot:70,pts:9.4,reb:3.8,ast:5.8,stl:1.8,blk:0.4,fgp:.448,tpp:.318,sal:5.5,yrs:1},
+{n:"Kobe Brown",pos:"PF",age:25,ovr:69,pot:76,pts:10.2,reb:4.8,ast:2.2,stl:0.7,blk:0.4,fgp:.498,tpp:.341,sal:5.0,yrs:2},
+{n:"Nicolas Batum",pos:"PF",age:37,ovr:66,pot:66,pts:7.2,reb:4.1,ast:2.8,stl:0.9,blk:0.5,fgp:.471,tpp:.361,sal:8.0,yrs:1},
+{n:"Derrick Jones Jr.",pos:"SF",age:28,ovr:68,pot:70,pts:8.8,reb:4.1,ast:1.8,stl:1.0,blk:0.6,fgp:.521,tpp:.318,sal:6.0,yrs:1},
+{n:"Yanic Konan Niederhauser",pos:"C",age:23,ovr:63,pot:75,pts:6.4,reb:5.2,ast:1.1,stl:0.5,blk:1.1,fgp:.561,tpp:.000,sal:3.0,yrs:3},
+{n:"Moussa Diabate",pos:"C",age:23,ovr:68,pot:78,pts:9.2,reb:7.8,ast:1.2,stl:0.6,blk:1.4,fgp:.571,tpp:.000,sal:4.2,yrs:1},
+{n:"Luke Kennard",pos:"SG",age:28,ovr:68,pot:68,pts:8.8,reb:2.2,ast:1.9,stl:0.8,blk:0.1,fgp:.447,tpp:.421,sal:6.2,yrs:1}
+]},
+{id:12,name:"Los Angeles Lakers",abbr:"LAL",conf:"West",div:"Pacific",players:[
+// Got Luke Kennard; lost Gabe Vincent (via sign trade). Marcus Smart from MEM
+{n:"Luka Doncic",pos:"PG",age:26,ovr:97,pot:97,pts:33.5,reb:9.2,ast:10.1,stl:1.4,blk:0.6,fgp:.491,tpp:.381,sal:49.0,yrs:4},
+{n:"LeBron James",pos:"SF",age:41,ovr:86,pot:86,pts:21.8,reb:7.4,ast:8.4,stl:1.1,blk:0.5,fgp:.498,tpp:.348,sal:51.0,yrs:1},
+{n:"Deandre Ayton",pos:"C",age:27,ovr:80,pot:81,pts:18.4,reb:11.8,ast:1.8,stl:0.8,blk:1.1,fgp:.598,tpp:.000,sal:33.0,yrs:3},
+{n:"Austin Reaves",pos:"SG",age:27,ovr:79,pot:80,pts:17.8,reb:4.2,ast:5.8,stl:1.0,blk:0.3,fgp:.468,tpp:.401,sal:13.0,yrs:2},
+{n:"Rui Hachimura",pos:"PF",age:27,ovr:75,pot:77,pts:13.8,reb:5.4,ast:1.8,stl:0.6,blk:0.5,fgp:.498,tpp:.368,sal:17.0,yrs:2},
+{n:"Dalton Knecht",pos:"SG",age:24,ovr:73,pot:79,pts:13.8,reb:3.8,ast:2.2,stl:0.8,blk:0.3,fgp:.461,tpp:.401,sal:6.2,yrs:2},
+{n:"Marcus Smart",pos:"PG",age:31,ovr:74,pot:74,pts:11.2,reb:3.8,ast:6.2,stl:1.8,blk:0.5,fgp:.438,tpp:.318,sal:15.0,yrs:1},
+{n:"Jarred Vanderbilt",pos:"PF",age:26,ovr:69,pot:72,pts:7.8,reb:7.2,ast:2.1,stl:1.1,blk:0.6,fgp:.521,tpp:.000,sal:5.5,yrs:2},
+{n:"Maxi Kleber",pos:"PF",age:33,ovr:67,pot:67,pts:8.4,reb:4.8,ast:1.4,stl:0.6,blk:0.7,fgp:.451,tpp:.381,sal:7.0,yrs:1},
+{n:"Bronny James",pos:"PG",age:21,ovr:65,pot:78,pts:7.4,reb:2.8,ast:3.1,stl:0.9,blk:0.3,fgp:.438,tpp:.341,sal:5.5,yrs:2},
+{n:"Jaxson Hayes",pos:"C",age:26,ovr:66,pot:70,pts:7.8,reb:6.2,ast:1.2,stl:0.5,blk:1.2,fgp:.618,tpp:.000,sal:5.0,yrs:1},
+{n:"Jake LaRavia",pos:"SF",age:24,ovr:67,pot:75,pts:8.4,reb:3.8,ast:2.2,stl:0.8,blk:0.5,fgp:.451,tpp:.348,sal:4.5,yrs:2},
+{n:"Adou Thiero",pos:"SF",age:23,ovr:65,pot:76,pts:7.1,reb:3.5,ast:1.5,stl:0.8,blk:0.4,fgp:.461,tpp:.318,sal:3.2,yrs:3}
+]},
+{id:13,name:"Memphis Grizzlies",abbr:"MEM",conf:"West",div:"Southwest",players:[
+// Traded Jaren Jackson Jr. to Utah. Got Anderson, Clayton, Hendricks, Niang + 3 firsts. Lost Marcus Smart to LAL
+{n:"Ja Morant",pos:"PG",age:26,ovr:91,pot:92,pts:28.4,reb:5.8,ast:8.8,stl:1.4,blk:0.5,fgp:.478,tpp:.321,sal:35.0,yrs:3},
+{n:"Brandon Ingram",pos:"SF",age:27,ovr:84,pot:85,pts:22.4,reb:5.4,ast:4.8,stl:0.8,blk:0.6,fgp:.481,tpp:.358,sal:36.0,yrs:3},
+{n:"Santi Aldama",pos:"PF",age:24,ovr:75,pot:81,pts:14.2,reb:6.8,ast:2.2,stl:0.8,blk:0.9,fgp:.478,tpp:.371,sal:10.0,yrs:2},
+{n:"Zach Edey",pos:"C",age:23,ovr:73,pot:79,pts:12.8,reb:9.8,ast:1.4,stl:0.4,blk:1.8,fgp:.598,tpp:.281,sal:6.8,yrs:3},
+{n:"Kyle Anderson",pos:"PF",age:32,ovr:67,pot:68,pts:8.8,reb:5.4,ast:3.8,stl:0.9,blk:0.5,fgp:.491,tpp:.298,sal:5.5,yrs:1},
+{n:"Walter Clayton Jr.",pos:"PG",age:23,ovr:71,pot:79,pts:12.8,reb:2.8,ast:5.2,stl:1.1,blk:0.2,fgp:.451,tpp:.388,sal:5.8,yrs:2},
+{n:"Taylor Hendricks",pos:"PF",age:22,ovr:68,pot:80,pts:10.2,reb:5.2,ast:1.5,stl:0.7,blk:0.9,fgp:.461,tpp:.348,sal:5.2,yrs:2},
+{n:"Georges Niang",pos:"PF",age:32,ovr:66,pot:67,pts:9.8,reb:3.8,ast:1.8,stl:0.6,blk:0.3,fgp:.451,tpp:.408,sal:5.0,yrs:1},
+{n:"GG Jackson II",pos:"PF",age:21,ovr:73,pot:83,pts:14.2,reb:5.4,ast:1.8,stl:0.7,blk:0.6,fgp:.468,tpp:.348,sal:6.5,yrs:3},
+{n:"Cedric Coward",pos:"SF",age:21,ovr:68,pot:81,pts:9.2,reb:3.8,ast:1.8,stl:0.9,blk:0.4,fgp:.458,tpp:.341,sal:4.8,yrs:3},
+{n:"Scotty Pippen Jr.",pos:"PG",age:25,ovr:67,pot:72,pts:9.4,reb:2.8,ast:4.8,stl:0.9,blk:0.2,fgp:.441,tpp:.348,sal:4.5,yrs:2},
+{n:"John Konchar",pos:"SG",age:29,ovr:65,pot:67,pts:6.8,reb:3.5,ast:2.2,stl:1.0,blk:0.3,fgp:.471,tpp:.351,sal:4.0,yrs:1},
+{n:"Ty Jerome",pos:"PG",age:27,ovr:68,pot:70,pts:9.2,reb:2.5,ast:4.8,stl:0.8,blk:0.2,fgp:.451,tpp:.378,sal:5.5,yrs:2}
+]},
+{id:14,name:"Miami Heat",abbr:"MIA",conf:"East",div:"Southeast",players:[
+{n:"Bam Adebayo",pos:"C",age:28,ovr:88,pot:89,pts:21.4,reb:10.8,ast:4.8,stl:1.2,blk:0.9,fgp:.528,tpp:.000,sal:32.0,yrs:3},
+{n:"Tyler Herro",pos:"PG",age:25,ovr:84,pot:86,pts:24.8,reb:4.8,ast:4.8,stl:1.1,blk:0.3,fgp:.461,tpp:.401,sal:30.0,yrs:3},
+{n:"Andrew Wiggins",pos:"SF",age:30,ovr:76,pot:76,pts:16.8,reb:5.4,ast:2.8,stl:1.0,blk:0.5,fgp:.468,tpp:.358,sal:24.0,yrs:1},
+{n:"Terry Rozier",pos:"SG",age:31,ovr:77,pot:77,pts:17.8,reb:3.8,ast:4.8,stl:1.2,blk:0.4,fgp:.448,tpp:.371,sal:26.0,yrs:2},
+{n:"Nikola Jovic",pos:"PF",age:22,ovr:73,pot:83,pts:12.4,reb:6.1,ast:3.8,stl:0.8,blk:0.6,fgp:.471,tpp:.361,sal:7.5,yrs:2},
+{n:"Kel'el Ware",pos:"C",age:22,ovr:70,pot:81,pts:10.2,reb:8.4,ast:1.8,stl:0.6,blk:1.8,fgp:.578,tpp:.318,sal:5.5,yrs:3},
+{n:"Kasparas Jakucionis",pos:"PG",age:20,ovr:68,pot:84,pts:10.2,reb:3.2,ast:4.5,stl:0.9,blk:0.3,fgp:.421,tpp:.348,sal:5.1,yrs:3},
+{n:"Jaime Jaquez Jr.",pos:"SF",age:24,ovr:71,pot:77,pts:11.8,reb:4.5,ast:2.8,stl:0.9,blk:0.4,fgp:.468,tpp:.328,sal:6.2,yrs:2},
+{n:"Davion Mitchell",pos:"PG",age:26,ovr:68,pot:71,pts:9.4,reb:2.8,ast:4.8,stl:1.2,blk:0.3,fgp:.441,tpp:.348,sal:5.5,yrs:1},
+{n:"Simone Fontecchio",pos:"SF",age:29,ovr:69,pot:71,pts:9.8,reb:3.8,ast:1.8,stl:0.7,blk:0.4,fgp:.451,tpp:.381,sal:6.0,yrs:2},
+{n:"Keshad Johnson",pos:"PF",age:24,ovr:63,pot:73,pts:6.4,reb:4.8,ast:1.2,stl:0.8,blk:0.6,fgp:.498,tpp:.300,sal:2.8,yrs:3},
+{n:"Pelle Larsson",pos:"SG",age:24,ovr:64,pot:73,pts:6.8,reb:2.5,ast:1.8,stl:0.8,blk:0.2,fgp:.441,tpp:.358,sal:3.0,yrs:3},
+{n:"Josh Green",pos:"SG",age:24,ovr:69,pot:73,pts:9.8,reb:3.5,ast:2.5,stl:1.2,blk:0.4,fgp:.451,tpp:.341,sal:5.0,yrs:1}
+]},
+{id:15,name:"Milwaukee Bucks",abbr:"MIL",conf:"East",div:"Central",players:[
+// Three-team deal: Bucks involved. Bobby Portis out
+{n:"Giannis Antetokounmpo",pos:"PF",age:31,ovr:96,pot:96,pts:32.1,reb:11.4,ast:6.2,stl:1.1,blk:1.4,fgp:.598,tpp:.261,sal:49.0,yrs:4},
+{n:"Khris Middleton",pos:"SF",age:34,ovr:78,pot:78,pts:14.8,reb:4.8,ast:4.2,stl:0.8,blk:0.4,fgp:.468,tpp:.378,sal:30.0,yrs:1},
+{n:"Brook Lopez",pos:"C",age:37,ovr:76,pot:76,pts:14.8,reb:5.8,ast:2.2,stl:0.8,blk:2.1,fgp:.498,tpp:.361,sal:15.0,yrs:1},
+{n:"Kyle Kuzma",pos:"PF",age:30,ovr:75,pot:75,pts:14.8,reb:6.8,ast:3.2,stl:0.8,blk:0.4,fgp:.448,tpp:.348,sal:13.0,yrs:2},
+{n:"Donte DiVincenzo",pos:"SG",age:28,ovr:74,pot:75,pts:13.8,reb:4.1,ast:3.8,stl:1.2,blk:0.4,fgp:.451,tpp:.398,sal:11.0,yrs:2},
+{n:"Bobby Portis",pos:"PF",age:30,ovr:72,pot:73,pts:13.2,reb:8.2,ast:1.8,stl:0.8,blk:0.6,fgp:.481,tpp:.341,sal:11.0,yrs:2},
+{n:"AJ Green",pos:"SG",age:25,ovr:70,pot:76,pts:11.2,reb:2.8,ast:2.2,stl:0.8,blk:0.2,fgp:.451,tpp:.408,sal:5.5,yrs:3},
+{n:"Kevin Porter Jr.",pos:"SG",age:25,ovr:67,pot:74,pts:9.2,reb:3.2,ast:4.5,stl:0.9,blk:0.3,fgp:.438,tpp:.338,sal:5.0,yrs:2},
+{n:"Gary Harris",pos:"SG",age:31,ovr:67,pot:68,pts:8.8,reb:2.5,ast:2.2,stl:1.0,blk:0.2,fgp:.441,tpp:.378,sal:5.0,yrs:1},
+{n:"Taurean Prince",pos:"SF",age:31,ovr:68,pot:69,pts:9.4,reb:4.1,ast:1.8,stl:0.7,blk:0.4,fgp:.461,tpp:.371,sal:5.5,yrs:1},
+{n:"Andre Jackson Jr.",pos:"SG",age:23,ovr:65,pot:75,pts:7.4,reb:3.2,ast:2.2,stl:1.1,blk:0.4,fgp:.451,tpp:.331,sal:3.5,yrs:2},
+{n:"Ryan Rollins",pos:"SG",age:23,ovr:64,pot:74,pts:7.2,reb:2.5,ast:3.2,stl:1.0,blk:0.2,fgp:.438,tpp:.348,sal:3.2,yrs:2},
+{n:"Jericho Sims",pos:"C",age:26,ovr:62,pot:68,pts:4.8,reb:6.2,ast:0.8,stl:0.5,blk:0.9,fgp:.588,tpp:.000,sal:2.5,yrs:1}
+]},
+{id:16,name:"Minnesota Timberwolves",abbr:"MIN",conf:"West",div:"Northwest",players:[
+// Sent Conley to CHI in 3-team. Got Ayo Dosunmu
+{n:"Anthony Edwards",pos:"SG",age:24,ovr:93,pot:96,pts:29.7,reb:5.8,ast:5.1,stl:1.4,blk:0.5,fgp:.481,tpp:.371,sal:45.0,yrs:4},
+{n:"Rudy Gobert",pos:"C",age:32,ovr:82,pot:82,pts:13.8,reb:11.3,ast:2.8,stl:0.8,blk:2.2,fgp:.648,tpp:.000,sal:41.0,yrs:2},
+{n:"Julius Randle",pos:"PF",age:30,ovr:83,pot:83,pts:23.8,reb:9.4,ast:4.8,stl:0.8,blk:0.5,fgp:.468,tpp:.318,sal:29.0,yrs:3},
+{n:"Jaden McDaniels",pos:"SF",age:24,ovr:76,pot:82,pts:14.2,reb:4.8,ast:2.4,stl:1.2,blk:0.9,fgp:.471,tpp:.358,sal:14.0,yrs:2},
+{n:"Naz Reid",pos:"C",age:26,ovr:76,pot:78,pts:14.8,reb:7.4,ast:2.4,stl:0.7,blk:1.1,fgp:.508,tpp:.358,sal:14.0,yrs:2},
+{n:"Rob Dillingham",pos:"PG",age:21,ovr:72,pot:86,pts:13.2,reb:2.8,ast:4.8,stl:1.0,blk:0.2,fgp:.441,tpp:.368,sal:6.2,yrs:3},
+{n:"Ayo Dosunmu",pos:"PG",age:25,ovr:72,pot:74,pts:11.2,reb:3.5,ast:4.2,stl:1.1,blk:0.3,fgp:.451,tpp:.368,sal:8.0,yrs:2},
+{n:"Leonard Miller",pos:"SF",age:23,ovr:68,pot:79,pts:9.2,reb:4.8,ast:1.8,stl:0.8,blk:0.5,fgp:.468,tpp:.328,sal:4.5,yrs:2},
+{n:"Terrence Shannon Jr.",pos:"SG",age:24,ovr:68,pot:76,pts:9.8,reb:3.2,ast:2.5,stl:1.0,blk:0.3,fgp:.458,tpp:.348,sal:4.8,yrs:2},
+{n:"Joan Beringer",pos:"C",age:20,ovr:66,pot:82,pts:7.2,reb:6.8,ast:1.2,stl:0.5,blk:1.4,fgp:.551,tpp:.000,sal:4.2,yrs:3},
+{n:"Bones Hyland",pos:"PG",age:25,ovr:70,pot:73,pts:12.2,reb:2.8,ast:4.5,stl:0.9,blk:0.2,fgp:.451,tpp:.371,sal:6.0,yrs:2},
+{n:"Jaylen Clark",pos:"SG",age:23,ovr:65,pot:74,pts:6.8,reb:3.1,ast:2.5,stl:1.4,blk:0.3,fgp:.448,tpp:.331,sal:3.2,yrs:2},
+{n:"Joe Ingles",pos:"SF",age:38,ovr:62,pot:62,pts:5.8,reb:3.2,ast:2.8,stl:0.6,blk:0.2,fgp:.451,tpp:.391,sal:4.0,yrs:1}
+]},
+{id:17,name:"New Orleans Pelicans",abbr:"NOP",conf:"West",div:"Southwest",players:[
+// Lost Alvarado to NYK. Gave away 2026 1st on draft night for Derik Queen
+{n:"Zion Williamson",pos:"PF",age:25,ovr:89,pot:92,pts:27.8,reb:7.8,ast:4.8,stl:1.1,blk:0.8,fgp:.598,tpp:.198,sal:37.0,yrs:3},
+{n:"Jordan Poole",pos:"SG",age:26,ovr:76,pot:78,pts:18.8,reb:3.2,ast:5.8,stl:0.9,blk:0.3,fgp:.448,tpp:.388,sal:30.0,yrs:2},
+{n:"Trey Murphy III",pos:"SF",age:24,ovr:76,pot:83,pts:16.8,reb:4.8,ast:2.4,stl:0.9,blk:0.5,fgp:.468,tpp:.398,sal:16.0,yrs:2},
+{n:"Jeremiah Fears",pos:"PG",age:19,ovr:72,pot:89,pts:12.8,reb:3.8,ast:6.8,stl:1.2,blk:0.3,fgp:.418,tpp:.328,sal:5.8,yrs:3},
+{n:"Herbert Jones",pos:"SF",age:26,ovr:72,pot:76,pts:10.8,reb:4.5,ast:2.8,stl:1.4,blk:0.6,fgp:.481,tpp:.318,sal:14.0,yrs:3},
+{n:"Derik Queen",pos:"C",age:20,ovr:70,pot:84,pts:11.2,reb:7.8,ast:2.1,stl:0.6,blk:1.1,fgp:.558,tpp:.000,sal:5.2,yrs:3},
+{n:"Saddiq Bey",pos:"SF",age:27,ovr:70,pot:73,pts:11.8,reb:4.8,ast:2.2,stl:0.8,blk:0.5,fgp:.451,tpp:.368,sal:7.0,yrs:2},
+{n:"Jordan Hawkins",pos:"SG",age:23,ovr:68,pot:77,pts:10.2,reb:2.8,ast:1.8,stl:0.7,blk:0.3,fgp:.451,tpp:.398,sal:4.8,yrs:2},
+{n:"Yves Missi",pos:"C",age:21,ovr:68,pot:81,pts:9.2,reb:8.1,ast:1.4,stl:0.5,blk:1.8,fgp:.621,tpp:.000,sal:5.1,yrs:3},
+{n:"Micah Peavy",pos:"SF",age:24,ovr:64,pot:74,pts:7.2,reb:3.5,ast:1.5,stl:0.9,blk:0.4,fgp:.448,tpp:.318,sal:3.0,yrs:2},
+{n:"Karlo Matkovic",pos:"C",age:23,ovr:62,pot:74,pts:5.8,reb:4.8,ast:1.1,stl:0.4,blk:0.9,fgp:.541,tpp:.280,sal:2.5,yrs:3},
+{n:"Jaden Springer",pos:"SG",age:23,ovr:63,pot:72,pts:6.8,reb:2.5,ast:2.5,stl:1.0,blk:0.3,fgp:.441,tpp:.338,sal:3.2,yrs:2},
+{n:"Lonzo Ball",pos:"PG",age:28,ovr:71,pot:73,pts:12.4,reb:4.8,ast:6.8,stl:1.5,blk:0.4,fgp:.451,tpp:.381,sal:2.0,yrs:1}
+]},
+{id:18,name:"New York Knicks",abbr:"NYK",conf:"East",div:"Atlantic",players:[
+// Got Jose Alvarado from NOP; traded Yabusele to CHI for Dalen Terry
+{n:"Jalen Brunson",pos:"PG",age:28,ovr:91,pot:91,pts:28.8,reb:3.8,ast:7.8,stl:1.0,blk:0.2,fgp:.498,tpp:.401,sal:34.0,yrs:3},
+{n:"Karl-Anthony Towns",pos:"C",age:30,ovr:90,pot:90,pts:24.8,reb:11.9,ast:3.8,stl:0.8,blk:1.4,fgp:.518,tpp:.381,sal:50.0,yrs:3},
+{n:"OG Anunoby",pos:"SF",age:27,ovr:83,pot:84,pts:17.8,reb:5.4,ast:2.8,stl:1.8,blk:0.7,fgp:.481,tpp:.381,sal:36.0,yrs:3},
+{n:"Mikal Bridges",pos:"SF",age:28,ovr:82,pot:83,pts:19.8,reb:4.8,ast:3.8,stl:1.2,blk:0.6,fgp:.478,tpp:.371,sal:25.0,yrs:4},
+{n:"Josh Hart",pos:"SG",age:30,ovr:78,pot:78,pts:13.8,reb:8.8,ast:4.8,stl:1.1,blk:0.5,fgp:.501,tpp:.311,sal:22.0,yrs:2},
+{n:"Mitchell Robinson",pos:"C",age:27,ovr:73,pot:75,pts:9.8,reb:10.8,ast:1.1,stl:0.5,blk:2.4,fgp:.688,tpp:.000,sal:14.0,yrs:2},
+{n:"Jose Alvarado",pos:"PG",age:27,ovr:72,pot:74,pts:11.8,reb:2.8,ast:4.8,stl:2.1,blk:0.3,fgp:.451,tpp:.348,sal:8.0,yrs:2},
+{n:"Jordan Clarkson",pos:"SG",age:33,ovr:74,pot:74,pts:14.8,reb:3.2,ast:3.5,stl:0.8,blk:0.2,fgp:.448,tpp:.361,sal:14.0,yrs:1},
+{n:"Miles McBride",pos:"PG",age:25,ovr:70,pot:74,pts:10.8,reb:2.8,ast:4.5,stl:1.1,blk:0.2,fgp:.448,tpp:.371,sal:5.5,yrs:2},
+{n:"Pacome Dadiet",pos:"SF",age:20,ovr:66,pot:82,pts:8.2,reb:3.1,ast:1.5,stl:0.7,blk:0.4,fgp:.441,tpp:.331,sal:4.2,yrs:3},
+{n:"Landry Shamet",pos:"SG",age:28,ovr:67,pot:68,pts:9.4,reb:2.2,ast:2.2,stl:0.6,blk:0.2,fgp:.441,tpp:.408,sal:5.0,yrs:1},
+{n:"Dalen Terry",pos:"SG",age:23,ovr:63,pot:72,pts:5.8,reb:2.8,ast:2.5,stl:1.0,blk:0.3,fgp:.431,tpp:.325,sal:2.8,yrs:2},
+{n:"Ariel Hukporti",pos:"C",age:24,ovr:64,pot:74,pts:6.4,reb:5.5,ast:0.9,stl:0.5,blk:1.2,fgp:.591,tpp:.000,sal:3.2,yrs:2}
+]},
+{id:19,name:"Oklahoma City Thunder",abbr:"OKC",conf:"West",div:"Northwest",players:[
+// Got Jared McCain from PHI
+{n:"Shai Gilgeous-Alexander",pos:"PG",age:27,ovr:97,pot:97,pts:31.1,reb:4.3,ast:6.6,stl:2.0,blk:1.0,fgp:.538,tpp:.348,sal:38.0,yrs:4},
+{n:"Jalen Williams",pos:"SG",age:24,ovr:88,pot:92,pts:24.8,reb:5.1,ast:5.8,stl:1.2,blk:0.7,fgp:.521,tpp:.361,sal:30.0,yrs:4},
+{n:"Chet Holmgren",pos:"C",age:23,ovr:86,pot:93,pts:19.8,reb:7.4,ast:2.8,stl:0.8,blk:2.8,fgp:.491,tpp:.371,sal:11.5,yrs:3},
+{n:"Isaiah Hartenstein",pos:"C",age:27,ovr:78,pot:80,pts:12.8,reb:10.4,ast:3.8,stl:0.9,blk:1.2,fgp:.598,tpp:.000,sal:25.0,yrs:4},
+{n:"Luguentz Dort",pos:"SG",age:26,ovr:77,pot:79,pts:14.8,reb:4.4,ast:2.8,stl:1.4,blk:0.5,fgp:.448,tpp:.348,sal:14.0,yrs:2},
+{n:"Alex Caruso",pos:"PG",age:31,ovr:75,pot:75,pts:10.8,reb:3.8,ast:3.8,stl:1.8,blk:0.4,fgp:.458,tpp:.378,sal:12.0,yrs:2},
+{n:"Cason Wallace",pos:"SG",age:22,ovr:74,pot:83,pts:12.8,reb:3.8,ast:3.5,stl:2.0,blk:0.4,fgp:.458,tpp:.361,sal:6.8,yrs:3},
+{n:"Jared McCain",pos:"SG",age:21,ovr:70,pot:82,pts:12.4,reb:3.2,ast:3.8,stl:0.9,blk:0.2,fgp:.451,tpp:.401,sal:5.5,yrs:3},
+{n:"Aaron Wiggins",pos:"SG",age:26,ovr:68,pot:71,pts:9.4,reb:3.2,ast:1.8,stl:1.0,blk:0.3,fgp:.458,tpp:.361,sal:5.0,yrs:2},
+{n:"Ousmane Dieng",pos:"SF",age:23,ovr:67,pot:78,pts:8.8,reb:4.1,ast:2.2,stl:0.8,blk:0.5,fgp:.451,tpp:.328,sal:4.5,yrs:2},
+{n:"Isaiah Joe",pos:"SG",age:26,ovr:67,pot:70,pts:9.4,reb:2.8,ast:1.8,stl:0.7,blk:0.3,fgp:.441,tpp:.401,sal:4.5,yrs:2},
+{n:"Jaylin Williams",pos:"PF",age:24,ovr:65,pot:73,pts:6.8,reb:5.8,ast:1.8,stl:0.7,blk:0.8,fgp:.521,tpp:.000,sal:3.5,yrs:2},
+{n:"Ajay Mitchell",pos:"SG",age:22,ovr:65,pot:76,pts:7.4,reb:2.8,ast:2.5,stl:0.9,blk:0.3,fgp:.448,tpp:.358,sal:3.2,yrs:3}
+]},
+{id:20,name:"Orlando Magic",abbr:"ORL",conf:"East",div:"Southeast",players:[
+{n:"Paolo Banchero",pos:"PF",age:22,ovr:89,pot:95,pts:25.8,reb:7.8,ast:5.4,stl:1.0,blk:0.7,fgp:.481,tpp:.328,sal:40.0,yrs:4},
+{n:"Franz Wagner",pos:"SF",age:23,ovr:85,pot:91,pts:22.8,reb:5.4,ast:4.8,stl:1.1,blk:0.7,fgp:.481,tpp:.341,sal:26.0,yrs:4},
+{n:"Desmond Bane",pos:"SG",age:26,ovr:80,pot:82,pts:20.8,reb:4.8,ast:3.8,stl:1.1,blk:0.4,fgp:.468,tpp:.401,sal:28.0,yrs:3},
+{n:"Wendell Carter Jr.",pos:"C",age:25,ovr:76,pot:79,pts:13.8,reb:9.8,ast:2.8,stl:0.7,blk:1.2,fgp:.528,tpp:.281,sal:18.0,yrs:2},
+{n:"Jonathan Isaac",pos:"PF",age:27,ovr:73,pot:76,pts:10.8,reb:5.8,ast:1.8,stl:1.2,blk:1.8,fgp:.478,tpp:.328,sal:17.0,yrs:3},
+{n:"Tyus Jones",pos:"PG",age:30,ovr:71,pot:72,pts:9.8,reb:2.8,ast:7.2,stl:1.1,blk:0.2,fgp:.481,tpp:.361,sal:9.0,yrs:2},
+{n:"Anthony Black",pos:"SG",age:21,ovr:72,pot:84,pts:12.8,reb:4.8,ast:3.8,stl:1.4,blk:0.5,fgp:.468,tpp:.328,sal:6.5,yrs:3},
+{n:"Goga Bitadze",pos:"C",age:26,ovr:71,pot:75,pts:11.2,reb:7.4,ast:2.1,stl:0.7,blk:1.8,fgp:.531,tpp:.261,sal:8.0,yrs:2},
+{n:"Tristan da Silva",pos:"SF",age:23,ovr:72,pot:80,pts:12.4,reb:4.5,ast:2.5,stl:0.8,blk:0.5,fgp:.471,tpp:.371,sal:6.8,yrs:3},
+{n:"Jett Howard",pos:"SG",age:22,ovr:69,pot:79,pts:10.2,reb:3.2,ast:2.2,stl:0.7,blk:0.3,fgp:.441,tpp:.371,sal:5.1,yrs:3},
+{n:"Jase Richardson",pos:"SG",age:20,ovr:65,pot:80,pts:7.4,reb:2.5,ast:2.5,stl:0.8,blk:0.2,fgp:.431,tpp:.348,sal:3.8,yrs:3},
+{n:"Moritz Wagner",pos:"C",age:28,ovr:70,pot:72,pts:11.4,reb:7.2,ast:1.8,stl:0.6,blk:0.8,fgp:.531,tpp:.278,sal:7.0,yrs:2},
+{n:"Noah Penda",pos:"SF",age:22,ovr:64,pot:77,pts:6.8,reb:4.1,ast:1.8,stl:0.9,blk:0.5,fgp:.451,tpp:.318,sal:3.2,yrs:3}
+]},
+{id:21,name:"Philadelphia 76ers",abbr:"PHI",conf:"East",div:"Atlantic",players:[
+// Lost Jared McCain to OKC. Lost Gordon to MEM
+{n:"Joel Embiid",pos:"C",age:31,ovr:94,pot:94,pts:29.8,reb:11.8,ast:3.8,stl:1.1,blk:1.8,fgp:.528,tpp:.321,sal:51.0,yrs:2},
+{n:"Tyrese Maxey",pos:"PG",age:25,ovr:89,pot:90,pts:29.0,reb:3.8,ast:6.8,stl:2.0,blk:0.4,fgp:.481,tpp:.401,sal:35.0,yrs:4},
+{n:"Paul George",pos:"SF",age:35,ovr:83,pot:83,pts:19.8,reb:5.8,ast:4.2,stl:1.4,blk:0.5,fgp:.461,tpp:.371,sal:49.0,yrs:1},
+{n:"VJ Edgecombe",pos:"SG",age:19,ovr:76,pot:91,pts:15.8,reb:5.1,ast:3.2,stl:1.4,blk:0.5,fgp:.461,tpp:.338,sal:6.8,yrs:3},
+{n:"Kelly Oubre Jr.",pos:"SF",age:29,ovr:70,pot:72,pts:12.8,reb:4.8,ast:2.2,stl:1.1,blk:0.5,fgp:.461,tpp:.341,sal:7.5,yrs:1},
+{n:"Andre Drummond",pos:"C",age:32,ovr:74,pot:74,pts:12.4,reb:12.4,ast:1.5,stl:0.8,blk:1.4,fgp:.588,tpp:.000,sal:8.0,yrs:1},
+{n:"Quentin Grimes",pos:"SG",age:25,ovr:70,pot:74,pts:11.2,reb:3.5,ast:2.2,stl:1.0,blk:0.3,fgp:.448,tpp:.381,sal:6.5,yrs:2},
+{n:"Justin Edwards",pos:"SF",age:21,ovr:66,pot:80,pts:8.4,reb:3.2,ast:1.8,stl:0.8,blk:0.5,fgp:.451,tpp:.328,sal:4.2,yrs:3},
+{n:"Kyle Lowry",pos:"PG",age:39,ovr:66,pot:66,pts:7.8,reb:3.2,ast:5.8,stl:1.1,blk:0.2,fgp:.418,tpp:.348,sal:6.0,yrs:1},
+{n:"Paul Reed Jr.",pos:"C",age:26,ovr:67,pot:74,pts:8.8,reb:7.8,ast:1.8,stl:0.7,blk:1.2,fgp:.538,tpp:.000,sal:4.5,yrs:2},
+{n:"Adem Bona",pos:"C",age:22,ovr:64,pot:77,pts:6.4,reb:5.8,ast:0.8,stl:0.5,blk:1.4,fgp:.601,tpp:.000,sal:3.2,yrs:3},
+{n:"Eric Gordon",pos:"SG",age:36,ovr:68,pot:68,pts:10.2,reb:2.8,ast:2.5,stl:0.8,blk:0.2,fgp:.441,tpp:.381,sal:6.5,yrs:1},
+{n:"Ricky Council IV",pos:"SF",age:24,ovr:65,pot:73,pts:8.8,reb:3.5,ast:1.8,stl:0.9,blk:0.4,fgp:.461,tpp:.328,sal:3.5,yrs:2}
+]},
+{id:22,name:"Phoenix Suns",abbr:"PHX",conf:"West",div:"Pacific",players:[
+// Three-team deal involving Bucks/Suns/Bulls. Devin Booker still here
+{n:"Devin Booker",pos:"SG",age:28,ovr:91,pot:91,pts:27.8,reb:4.8,ast:6.8,stl:1.2,blk:0.4,fgp:.491,tpp:.381,sal:36.0,yrs:3},
+{n:"Jalen Green",pos:"SG",age:23,ovr:82,pot:89,pts:22.8,reb:4.2,ast:4.8,stl:0.9,blk:0.4,fgp:.461,tpp:.348,sal:28.0,yrs:3},
+{n:"Khaman Maluach",pos:"C",age:19,ovr:72,pot:92,pts:11.2,reb:7.8,ast:1.5,stl:0.6,blk:2.4,fgp:.608,tpp:.000,sal:6.2,yrs:3},
+{n:"Dillon Brooks",pos:"SF",age:29,ovr:72,pot:73,pts:13.8,reb:3.8,ast:2.8,stl:1.2,blk:0.4,fgp:.441,tpp:.338,sal:20.0,yrs:2},
+{n:"Ryan Dunn",pos:"SF",age:23,ovr:72,pot:82,pts:12.4,reb:4.8,ast:2.5,stl:1.4,blk:0.9,fgp:.468,tpp:.328,sal:6.8,yrs:3},
+{n:"Grayson Allen",pos:"SG",age:30,ovr:72,pot:73,pts:12.8,reb:3.8,ast:2.8,stl:0.9,blk:0.3,fgp:.451,tpp:.401,sal:9.0,yrs:2},
+{n:"Royce O'Neale",pos:"SF",age:32,ovr:69,pot:70,pts:9.4,reb:4.1,ast:2.2,stl:1.0,blk:0.4,fgp:.461,tpp:.378,sal:5.5,yrs:1},
+{n:"Nick Richards",pos:"C",age:27,ovr:68,pot:71,pts:8.8,reb:8.8,ast:1.2,stl:0.5,blk:1.2,fgp:.608,tpp:.000,sal:5.5,yrs:2},
+{n:"Rasheer Fleming",pos:"PF",age:22,ovr:67,pot:82,pts:8.8,reb:5.2,ast:1.5,stl:0.8,blk:0.8,fgp:.498,tpp:.318,sal:4.8,yrs:3},
+{n:"Collin Gillespie",pos:"PG",age:26,ovr:64,pot:70,pts:7.4,reb:2.8,ast:3.8,stl:0.8,blk:0.2,fgp:.428,tpp:.368,sal:3.5,yrs:2},
+{n:"Jordan Goodwin",pos:"SG",age:25,ovr:65,pot:71,pts:7.8,reb:3.2,ast:2.5,stl:1.2,blk:0.3,fgp:.451,tpp:.328,sal:3.2,yrs:2},
+{n:"Oso Ighodaro",pos:"C",age:23,ovr:63,pot:75,pts:6.2,reb:5.8,ast:1.2,stl:0.5,blk:1.1,fgp:.568,tpp:.000,sal:3.0,yrs:3},
+{n:"Tyrese Haliburton",pos:"PG",age:25,ovr:75,pot:80,pts:16.8,reb:3.8,ast:8.5,stl:1.5,blk:0.4,fgp:.461,tpp:.388,sal:25.0,yrs:2}
+]},
+{id:23,name:"Portland Trail Blazers",abbr:"POR",conf:"West",div:"Northwest",players:[
+// Got Vit Krejci from ATL
+{n:"Damian Lillard",pos:"PG",age:35,ovr:85,pot:85,pts:24.8,reb:3.8,ast:7.8,stl:0.9,blk:0.2,fgp:.451,tpp:.388,sal:46.0,yrs:2},
+{n:"Deni Avdija",pos:"SF",age:24,ovr:83,pot:88,pts:25.5,reb:6.4,ast:5.5,stl:1.4,blk:0.8,fgp:.508,tpp:.381,sal:22.0,yrs:3},
+{n:"Scoot Henderson",pos:"PG",age:22,ovr:78,pot:89,pts:17.8,reb:4.8,ast:7.8,stl:1.1,blk:0.4,fgp:.438,tpp:.318,sal:9.2,yrs:2},
+{n:"Shaedon Sharpe",pos:"SG",age:23,ovr:77,pot:87,pts:18.8,reb:4.8,ast:3.2,stl:1.0,blk:0.5,fgp:.461,tpp:.341,sal:9.2,yrs:2},
+{n:"Jerami Grant",pos:"PF",age:31,ovr:77,pot:78,pts:17.8,reb:4.8,ast:2.8,stl:0.9,blk:0.8,fgp:.481,tpp:.361,sal:21.0,yrs:2},
+{n:"Donovan Clingan",pos:"C",age:21,ovr:75,pot:86,pts:13.2,reb:11.6,ast:2.1,stl:0.6,blk:2.4,fgp:.628,tpp:.000,sal:6.8,yrs:3},
+{n:"Jrue Holiday",pos:"PG",age:36,ovr:80,pot:80,pts:13.8,reb:4.8,ast:8.8,stl:1.8,blk:0.8,fgp:.478,tpp:.371,sal:36.0,yrs:1},
+{n:"Rayan Rupert",pos:"SF",age:22,ovr:68,pot:80,pts:10.2,reb:3.5,ast:2.1,stl:0.9,blk:0.5,fgp:.468,tpp:.338,sal:5.0,yrs:3},
+{n:"Kris Murray",pos:"PF",age:24,ovr:68,pot:76,pts:9.8,reb:4.8,ast:1.8,stl:0.7,blk:0.5,fgp:.468,tpp:.348,sal:5.0,yrs:2},
+{n:"Toumani Camara",pos:"SF",age:24,ovr:68,pot:76,pts:9.4,reb:5.1,ast:2.2,stl:1.0,blk:0.5,fgp:.481,tpp:.318,sal:5.0,yrs:2},
+{n:"Duop Reath",pos:"C",age:28,ovr:67,pot:69,pts:8.8,reb:6.8,ast:1.5,stl:0.5,blk:0.9,fgp:.551,tpp:.298,sal:4.5,yrs:2},
+{n:"Matisse Thybulle",pos:"SG",age:28,ovr:67,pot:69,pts:7.8,reb:3.8,ast:1.8,stl:1.8,blk:0.7,fgp:.451,tpp:.318,sal:5.5,yrs:1},
+{n:"Blake Wesley",pos:"PG",age:23,ovr:63,pot:74,pts:6.8,reb:2.5,ast:3.8,stl:0.9,blk:0.2,fgp:.428,tpp:.328,sal:3.2,yrs:2}
+]},
+{id:24,name:"Sacramento Kings",abbr:"SAC",conf:"West",div:"Pacific",players:[
+// Got De'Andre Hunter from CLE in 3-team
+{n:"Domantas Sabonis",pos:"C",age:29,ovr:87,pot:87,pts:23.8,reb:14.2,ast:7.8,stl:0.8,blk:0.5,fgp:.578,tpp:.000,sal:32.0,yrs:3},
+{n:"De'Aaron Fox",pos:"PG",age:28,ovr:84,pot:84,pts:26.2,reb:4.8,ast:7.8,stl:1.6,blk:0.4,fgp:.498,tpp:.328,sal:32.0,yrs:2},
+{n:"De'Andre Hunter",pos:"SF",age:27,ovr:77,pot:78,pts:14.8,reb:4.2,ast:2.2,stl:1.1,blk:0.5,fgp:.462,tpp:.371,sal:16.0,yrs:2},
+{n:"Keegan Murray",pos:"SF",age:24,ovr:76,pot:82,pts:15.8,reb:5.4,ast:2.2,stl:0.8,blk:0.5,fgp:.478,tpp:.391,sal:10.0,yrs:2},
+{n:"Malik Monk",pos:"PG",age:27,ovr:77,pot:78,pts:16.8,reb:3.8,ast:5.8,stl:1.1,blk:0.3,fgp:.481,tpp:.391,sal:19.0,yrs:2},
+{n:"Keon Ellis",pos:"SG",age:24,ovr:70,pot:77,pts:11.2,reb:3.5,ast:2.8,stl:1.4,blk:0.4,fgp:.461,tpp:.358,sal:6.5,yrs:2},
+{n:"Harrison Barnes",pos:"SF",age:33,ovr:72,pot:73,pts:13.2,reb:5.8,ast:2.2,stl:0.8,blk:0.5,fgp:.471,tpp:.368,sal:12.0,yrs:1},
+{n:"Devin Carter",pos:"SG",age:23,ovr:70,pot:81,pts:11.2,reb:3.8,ast:3.5,stl:1.4,blk:0.4,fgp:.441,tpp:.341,sal:5.8,yrs:3},
+{n:"Nique Clifford",pos:"SF",age:24,ovr:68,pot:75,pts:9.8,reb:4.8,ast:2.2,stl:0.8,blk:0.5,fgp:.481,tpp:.341,sal:4.5,yrs:2},
+{n:"Maxime Raynaud",pos:"C",age:23,ovr:67,pot:78,pts:9.2,reb:7.8,ast:1.5,stl:0.5,blk:1.2,fgp:.548,tpp:.341,sal:4.2,yrs:3},
+{n:"Doug McDermott",pos:"SF",age:33,ovr:66,pot:67,pts:8.8,reb:2.8,ast:1.5,stl:0.5,blk:0.2,fgp:.451,tpp:.421,sal:5.0,yrs:1},
+{n:"Isaac Jones",pos:"SG",age:22,ovr:63,pot:74,pts:6.4,reb:2.5,ast:1.8,stl:0.7,blk:0.2,fgp:.438,tpp:.328,sal:2.8,yrs:3},
+{n:"Drew Eubanks",pos:"C",age:28,ovr:64,pot:67,pts:7.2,reb:6.8,ast:1.2,stl:0.5,blk:1.0,fgp:.568,tpp:.000,sal:3.5,yrs:1}
+]},
+{id:25,name:"San Antonio Spurs",abbr:"SAS",conf:"West",div:"Southwest",players:[
+{n:"Victor Wembanyama",pos:"C",age:21,ovr:95,pot:99,pts:27.8,reb:11.1,ast:3.8,stl:1.2,blk:3.0,fgp:.488,tpp:.348,sal:13.0,yrs:3},
+{n:"Dylan Harper",pos:"PG",age:19,ovr:77,pot:94,pts:15.8,reb:4.5,ast:5.8,stl:1.0,blk:0.4,fgp:.448,tpp:.318,sal:6.8,yrs:3},
+{n:"Devin Vassell",pos:"SF",age:25,ovr:77,pot:81,pts:16.8,reb:3.8,ast:2.8,stl:1.0,blk:0.4,fgp:.468,tpp:.378,sal:20.0,yrs:2},
+{n:"Stephon Castle",pos:"SG",age:21,ovr:75,pot:87,pts:13.8,reb:4.2,ast:4.8,stl:1.2,blk:0.4,fgp:.458,tpp:.318,sal:6.2,yrs:3},
+{n:"Keldon Johnson",pos:"SF",age:26,ovr:74,pot:76,pts:14.8,reb:5.8,ast:2.8,stl:1.0,blk:0.5,fgp:.468,tpp:.348,sal:14.0,yrs:2},
+{n:"Carter Bryant",pos:"SF",age:20,ovr:68,pot:83,pts:9.4,reb:3.8,ast:1.8,stl:0.7,blk:0.5,fgp:.451,tpp:.341,sal:5.2,yrs:3},
+{n:"Ja'Kobe Walter",pos:"SG",age:21,ovr:66,pot:80,pts:8.8,reb:3.2,ast:2.2,stl:0.8,blk:0.3,fgp:.441,tpp:.351,sal:4.2,yrs:3},
+{n:"Julian Champagnie",pos:"SF",age:24,ovr:69,pot:76,pts:10.4,reb:3.8,ast:1.8,stl:0.8,blk:0.4,fgp:.461,tpp:.371,sal:5.0,yrs:2},
+{n:"Luke Kornet",pos:"C",age:29,ovr:65,pot:67,pts:7.8,reb:6.5,ast:1.8,stl:0.4,blk:1.5,fgp:.538,tpp:.328,sal:4.0,yrs:1},
+{n:"Jordan McLaughlin",pos:"PG",age:28,ovr:63,pot:65,pts:5.8,reb:2.2,ast:4.8,stl:1.1,blk:0.2,fgp:.451,tpp:.348,sal:3.0,yrs:1},
+{n:"Bismack Biyombo",pos:"C",age:33,ovr:62,pot:62,pts:5.2,reb:7.2,ast:1.1,stl:0.5,blk:1.4,fgp:.578,tpp:.000,sal:3.0,yrs:1},
+{n:"Zaccharie Risacher",pos:"SF",age:20,ovr:72,pot:87,pts:12.2,reb:3.8,ast:1.8,stl:0.9,blk:0.5,fgp:.458,tpp:.345,sal:5.8,yrs:2},
+{n:"Harrison Barnes",pos:"PF",age:33,ovr:72,pot:73,pts:13.2,reb:5.8,ast:2.2,stl:0.8,blk:0.5,fgp:.471,tpp:.368,sal:12.0,yrs:1}
+]},
+{id:26,name:"Toronto Raptors",abbr:"TOR",conf:"East",div:"Atlantic",players:[
+// Got Chris Paul from 3-team deal
+{n:"Scottie Barnes",pos:"SF",age:24,ovr:86,pot:91,pts:22.4,reb:8.8,ast:6.4,stl:1.2,blk:0.8,fgp:.481,tpp:.318,sal:33.0,yrs:4},
+{n:"RJ Barrett",pos:"SG",age:25,ovr:82,pot:84,pts:22.8,reb:5.8,ast:4.8,stl:1.0,blk:0.5,fgp:.471,tpp:.348,sal:27.0,yrs:3},
+{n:"Immanuel Quickley",pos:"PG",age:26,ovr:80,pot:82,pts:18.8,reb:4.2,ast:7.8,stl:1.1,blk:0.3,fgp:.451,tpp:.388,sal:18.0,yrs:3},
+{n:"Chris Paul",pos:"PG",age:40,ovr:68,pot:68,pts:9.8,reb:3.8,ast:7.8,stl:1.2,blk:0.2,fgp:.471,tpp:.388,sal:3.0,yrs:1},
+{n:"Jakob Poeltl",pos:"C",age:30,ovr:76,pot:77,pts:13.8,reb:9.8,ast:3.8,stl:0.7,blk:1.4,fgp:.618,tpp:.000,sal:22.0,yrs:2},
+{n:"Gradey Dick",pos:"SG",age:22,ovr:73,pot:83,pts:13.8,reb:3.8,ast:2.5,stl:0.8,blk:0.3,fgp:.451,tpp:.408,sal:6.8,yrs:3},
+{n:"Ochai Agbaji",pos:"SG",age:25,ovr:70,pot:75,pts:11.2,reb:3.8,ast:2.2,stl:0.9,blk:0.4,fgp:.461,tpp:.361,sal:6.0,yrs:2},
+{n:"Collin Murray-Boyles",pos:"PF",age:21,ovr:70,pot:83,pts:10.8,reb:5.8,ast:1.8,stl:0.9,blk:0.8,fgp:.508,tpp:.000,sal:5.5,yrs:3},
+{n:"Kelly Olynyk",pos:"C",age:34,ovr:68,pot:68,pts:9.8,reb:6.2,ast:3.2,stl:0.6,blk:0.5,fgp:.491,tpp:.358,sal:6.5,yrs:1},
+{n:"Jamal Shead",pos:"PG",age:24,ovr:67,pot:75,pts:8.8,reb:3.1,ast:6.8,stl:1.2,blk:0.3,fgp:.438,tpp:.318,sal:4.0,yrs:3},
+{n:"Sandro Mamukelashvili",pos:"PF",age:26,ovr:67,pot:72,pts:8.8,reb:5.1,ast:2.2,stl:0.6,blk:0.5,fgp:.488,tpp:.351,sal:4.5,yrs:2},
+{n:"Jonathan Mogbo",pos:"PF",age:23,ovr:67,pot:78,pts:8.4,reb:5.8,ast:1.8,stl:0.8,blk:0.8,fgp:.501,tpp:.000,sal:4.2,yrs:3},
+{n:"Brice Sensabaugh",pos:"SG",age:22,ovr:65,pot:76,pts:7.8,reb:3.2,ast:1.5,stl:0.7,blk:0.3,fgp:.441,tpp:.351,sal:3.8,yrs:3}
+]},
+{id:27,name:"Utah Jazz",abbr:"UTA",conf:"West",div:"Northwest",players:[
+// Got Jaren Jackson Jr.! Paid 3 first-round picks. Lost Clayton, Hendricks, Anderson, Niang
+{n:"Jaren Jackson Jr.",pos:"C",age:25,ovr:88,pot:90,pts:22.8,reb:7.8,ast:2.2,stl:0.8,blk:3.0,fgp:.488,tpp:.361,sal:38.0,yrs:3},
+{n:"Lauri Markkanen",pos:"PF",age:28,ovr:83,pot:84,pts:22.8,reb:8.4,ast:2.8,stl:0.9,blk:0.8,fgp:.481,tpp:.381,sal:22.0,yrs:3},
+{n:"Walker Kessler",pos:"C",age:24,ovr:76,pot:82,pts:12.4,reb:10.8,ast:1.8,stl:0.5,blk:2.8,fgp:.638,tpp:.000,sal:9.0,yrs:2},
+{n:"Keyonte George",pos:"PG",age:22,ovr:73,pot:83,pts:15.8,reb:3.8,ast:5.8,stl:1.1,blk:0.3,fgp:.441,tpp:.358,sal:7.5,yrs:2},
+{n:"John Konchar",pos:"SG",age:29,ovr:65,pot:67,pts:6.8,reb:3.5,ast:2.2,stl:1.0,blk:0.3,fgp:.471,tpp:.351,sal:4.0,yrs:1},
+{n:"Vince Williams Jr.",pos:"SG",age:23,ovr:64,pot:73,pts:6.8,reb:2.8,ast:2.2,stl:0.9,blk:0.3,fgp:.441,tpp:.345,sal:3.2,yrs:1},
+{n:"Isaiah Collier",pos:"PG",age:21,ovr:72,pot:85,pts:13.4,reb:3.8,ast:6.5,stl:1.0,blk:0.3,fgp:.441,tpp:.318,sal:6.2,yrs:3},
+{n:"Kyle Filipowski",pos:"PF",age:22,ovr:71,pot:80,pts:12.4,reb:6.8,ast:2.8,stl:0.7,blk:0.9,fgp:.491,tpp:.348,sal:5.8,yrs:3},
+{n:"Ace Bailey",pos:"SF",age:19,ovr:74,pot:93,pts:14.8,reb:5.4,ast:2.2,stl:0.9,blk:0.7,fgp:.438,tpp:.318,sal:6.5,yrs:3},
+{n:"Will Riley",pos:"SG",age:20,ovr:67,pot:82,pts:9.4,reb:3.2,ast:2.2,stl:0.8,blk:0.3,fgp:.441,tpp:.358,sal:4.8,yrs:3},
+{n:"Cody Williams",pos:"SF",age:20,ovr:68,pot:83,pts:9.8,reb:3.8,ast:2.5,stl:0.8,blk:0.5,fgp:.451,tpp:.328,sal:5.5,yrs:3},
+{n:"Jusuf Nurkic",pos:"C",age:31,ovr:72,pot:72,pts:12.4,reb:10.8,ast:3.8,stl:0.7,blk:1.1,fgp:.541,tpp:.000,sal:17.0,yrs:2},
+{n:"Lonzo Ball",pos:"PG",age:28,ovr:71,pot:73,pts:12.4,reb:4.8,ast:6.8,stl:1.5,blk:0.4,fgp:.451,tpp:.381,sal:2.0,yrs:1}
+]},
+{id:28,name:"Washington Wizards",abbr:"WAS",conf:"East",div:"Southeast",players:[
+// Got Trae Young (Jan), Anthony Davis + D'Angelo Russell + Jaden Hardy (Feb deadline)
+{n:"Trae Young",pos:"PG",age:27,ovr:90,pot:91,pts:27.4,reb:3.8,ast:11.2,stl:1.4,blk:0.2,fgp:.442,tpp:.359,sal:43.0,yrs:3},
+{n:"Anthony Davis",pos:"C",age:32,ovr:93,pot:93,pts:27.1,reb:12.8,ast:2.8,stl:1.2,blk:2.4,fgp:.578,tpp:.241,sal:45.0,yrs:1},
+{n:"Alex Sarr",pos:"C",age:21,ovr:74,pot:90,pts:14.8,reb:7.8,ast:2.8,stl:0.8,blk:2.4,fgp:.468,tpp:.318,sal:7.5,yrs:3},
+{n:"Bilal Coulibaly",pos:"SG",age:21,ovr:74,pot:88,pts:13.8,reb:4.8,ast:3.8,stl:1.4,blk:0.7,fgp:.451,tpp:.338,sal:7.5,yrs:3},
+{n:"D'Angelo Russell",pos:"PG",age:29,ovr:74,pot:74,pts:13.8,reb:2.8,ast:5.8,stl:0.8,blk:0.2,fgp:.451,tpp:.368,sal:18.0,yrs:1},
+{n:"Jaden Hardy",pos:"SG",age:23,ovr:71,pot:79,pts:11.8,reb:2.8,ast:2.5,stl:0.7,blk:0.2,fgp:.441,tpp:.371,sal:5.5,yrs:2},
+{n:"Tre Johnson",pos:"SG",age:19,ovr:73,pot:88,pts:14.2,reb:3.2,ast:3.2,stl:0.9,blk:0.3,fgp:.451,tpp:.348,sal:6.2,yrs:3},
+{n:"Kyshawn George",pos:"SF",age:22,ovr:69,pot:82,pts:10.8,reb:3.8,ast:2.5,stl:0.9,blk:0.5,fgp:.448,tpp:.348,sal:5.5,yrs:3},
+{n:"Corey Kispert",pos:"SF",age:26,ovr:70,pot:74,pts:11.4,reb:3.8,ast:2.2,stl:0.7,blk:0.3,fgp:.461,tpp:.398,sal:6.5,yrs:1},
+{n:"Bub Carrington",pos:"PG",age:20,ovr:65,pot:79,pts:8.4,reb:2.8,ast:4.2,stl:0.9,blk:0.2,fgp:.431,tpp:.328,sal:4.2,yrs:3},
+{n:"Anthony Gill",pos:"PF",age:32,ovr:62,pot:63,pts:5.8,reb:3.8,ast:1.1,stl:0.6,blk:0.4,fgp:.491,tpp:.318,sal:3.2,yrs:1},
+{n:"Justin Champagnie",pos:"SF",age:24,ovr:67,pot:74,pts:9.2,reb:4.1,ast:1.8,stl:0.8,blk:0.4,fgp:.461,tpp:.338,sal:4.5,yrs:2},
+{n:"Jordan Poole",pos:"SG",age:26,ovr:72,pot:74,pts:14.8,reb:2.8,ast:4.8,stl:0.9,blk:0.2,fgp:.441,tpp:.378,sal:22.0,yrs:1}
+]}
+];
+
+// ════════════════════════════════════════════════════════════════
+// ACCURATE 2026 NBA DRAFT LOTTERY ODDS
+// Source: NBA.com, ESPN, CBS Sports — Official post-season odds
+// Seeds 1-3 (worst 3 records): 14% each for #1 pick
+// ════════════════════════════════════════════════════════════════
+const LOTTERY_ODDS = [14.0, 14.0, 14.0, 11.5, 11.5, 9.0, 6.75, 6.75, 4.5, 3.0, 2.0, 1.5, 1.0, 0.5];
+// Corresponding lottery seed positions (1=worst record)
+// Seeds 1-14 get lottery odds above. Seeds 15-30 are playoff teams picked in reverse order.
+<script>
+const DRAFT_2027=[
+{n:"AJ Dybantsa",pos:"SF",age:20,ovr:83,pot:98,school:"BYU",note:"Supercharged Jaylen Brown — expected #1"},
+{n:"Darryn Peterson",pos:"SG",age:20,ovr:82,pot:96,school:"Kansas",note:"Elite scoring guard"},
+{n:"Cameron Boozer",pos:"PF",age:20,ovr:80,pot:94,school:"Duke",note:"Son of Carlos Boozer"},
+{n:"Caleb Wilson",pos:"SF",age:20,ovr:79,pot:92,school:"UNC",note:"Star wing potential"},
+{n:"Nate Ament",pos:"PF",age:20,ovr:76,pot:90,school:"Tennessee",note:"Athletic versatile big"},
+{n:"Cayden Boozer",pos:"PG",age:20,ovr:74,pot:87,school:"Duke",note:"Cameron twin — playmaker"},
+{n:"Kiyan Anthony",pos:"SG",age:20,ovr:74,pot:87,school:"Syracuse",note:"Carmelo son — elite scorer"},
+{n:"Bryce James",pos:"PG",age:20,ovr:72,pot:85,school:"USC",note:"LeBron son — playmaking PG"},
+{n:"Marcus Allen Jr.",pos:"SG",age:20,ovr:73,pot:86,school:"Kentucky",note:"High-flyer"},
+{n:"Tre Henry",pos:"C",age:20,ovr:72,pot:84,school:"Ohio State",note:"Mobile center"},
+{n:"Koa Peat",pos:"PF",age:20,ovr:70,pot:83,school:"Arizona",note:"Physical PF"},
+{n:"Darius Acuff Jr.",pos:"PG",age:20,ovr:70,pot:83,school:"Tennessee",note:"Dynamic lead guard"},
+{n:"Jalen Hooks",pos:"SF",age:19,ovr:69,pot:83,school:"Memphis",note:"Athletic wing"},
+{n:"Omaha Biliew",pos:"SF",age:20,ovr:68,pot:81,school:"Iowa State",note:"High-motor"},
+{n:"Elmarko Jackson",pos:"SG",age:20,ovr:68,pot:81,school:"Memphis",note:"Scoring guard"},
+{n:"Jace Richardson",pos:"SG",age:20,ovr:67,pot:80,school:"Kansas",note:"Sniper"},
+{n:"Anthony Garland",pos:"PG",age:20,ovr:71,pot:84,school:"Texas",note:"Quick playmaker"},
+{n:"Tre Bell-Haynes",pos:"PG",age:20,ovr:67,pot:80,school:"Georgetown",note:"Creative PG"},
+{n:"Marcus Domask",pos:"SG",age:23,ovr:70,pot:77,school:"Illinois",note:"Efficient scorer"},
+{n:"Hunter Dickinson",pos:"C",age:24,ovr:71,pot:76,school:"Kansas",note:"7-footer"},
+{n:"Cason Wallace",pos:"SG",age:23,ovr:70,pot:79,school:"Kentucky",note:"Defensive guard"},
+{n:"Tyran Stokes",pos:"SG",age:20,ovr:68,pot:82,school:"Indiana",note:"Wing scorer"},
+{n:"Ausar Thompson",pos:"SF",age:23,ovr:71,pot:83,school:"G-League",note:"Athletic twin"},
+{n:"Amen Thompson",pos:"PF",age:23,ovr:71,pot:82,school:"G-League",note:"Athletic twin"},
+{n:"Brandin Podziemski Jr.",pos:"SG",age:21,ovr:69,pot:79,school:"Santa Clara",note:"IQ shooter"},
+{n:"Cody Williams",pos:"SF",age:22,ovr:67,pot:82,school:"Colorado",note:"Versatile wing"},
+{n:"Dylan Andrews",pos:"PG",age:20,ovr:68,pot:81,school:"UCLA",note:"Defense-first PG"},
+{n:"Jalen Haralson",pos:"SF",age:20,ovr:69,pot:83,school:"Auburn",note:"Athletic wing"},
+{n:"Terrence Clarke Jr.",pos:"SG",age:21,ovr:68,pot:84,school:"G-League",note:"High-ceiling"},
+{n:"Keyonte George Jr.",pos:"PG",age:21,ovr:67,pot:80,school:"Baylor",note:"Scoring guard"}
+];
+const DRAFT_2028=[
+{n:"Meleek Thomas",pos:"SG",age:19,ovr:79,pot:95,school:"G-League",note:"High-flyer 6ft6"},
+{n:"Jasper Johnson",pos:"PG",age:19,ovr:75,pot:91,school:"Alabama",note:"Explosive PG"},
+{n:"Isaiah Crawford",pos:"SF",age:19,ovr:74,pot:90,school:"Florida",note:"Elite athlete"},
+{n:"Carter Lewis",pos:"C",age:19,ovr:73,pot:89,school:"Michigan State",note:"Mobile big"},
+{n:"Tate Williams",pos:"SG",age:19,ovr:71,pot:86,school:"Tennessee",note:"Athletic shooter"},
+{n:"Amari Bailey",pos:"SG",age:19,ovr:70,pot:85,school:"UCLA",note:"Athletic wing"},
+{n:"Khaleek Williams",pos:"PF",age:19,ovr:69,pot:84,school:"UNC",note:"Forward prospect"},
+{n:"Zion Harmon",pos:"PG",age:19,ovr:69,pot:83,school:"WKU",note:"Scoring PG"},
+{n:"Nick Watson",pos:"SG",age:19,ovr:68,pot:82,school:"Purdue",note:"Shooter"},
+{n:"Jordan Hawkins Jr.",pos:"SG",age:19,ovr:68,pot:82,school:"UConn",note:"3pt specialist"},
+{n:"Ron Holland",pos:"SF",age:20,ovr:68,pot:82,school:"G-League",note:"Athletic forward"},
+{n:"Elijah Fisher",pos:"SF",age:19,ovr:67,pot:83,school:"G-League",note:"Canadian wing"},
+{n:"Dorian Finney-Smith Jr.",pos:"SF",age:19,ovr:72,pot:87,school:"TBD",note:"Next-gen 3+D"},
+{n:"Dain Dainja",pos:"C",age:20,ovr:67,pot:79,school:"Illinois",note:"Powerful big"},
+{n:"Devin Brown II",pos:"SG",age:19,ovr:65,pot:80,school:"Ohio State",note:"Athletic scorer"},
+{n:"Javon Small",pos:"PG",age:22,ovr:65,pot:76,school:"West Virginia",note:"Quick scorer"},
+{n:"Enrique Freeman",pos:"PF",age:23,ovr:66,pot:74,school:"Akron",note:"Athletic PF"},
+{n:"Jake Seliger",pos:"PF",age:20,ovr:65,pot:78,school:"Gonzaga",note:"Stretch 4"},
+{n:"Reece Brown",pos:"C",age:20,ovr:64,pot:78,school:"Syracuse",note:"Interior scorer"},
+{n:"Chance McMillian",pos:"PG",age:20,ovr:65,pot:78,school:"Iowa State",note:"Sharp shooter"},
+{n:"Cameron Wright",pos:"C",age:20,ovr:63,pot:76,school:"TBD",note:"Shot-blocker"},
+{n:"Marcus Turner",pos:"SG",age:20,ovr:63,pot:78,school:"TBD",note:"Wing shooter"},
+{n:"Devon Harris Jr.",pos:"PF",age:19,ovr:62,pot:78,school:"TBD",note:"Athletic 4"},
+{n:"Anthony Clark",pos:"PG",age:21,ovr:64,pot:75,school:"TBD",note:"Quick playmaker"},
+{n:"Cody Williams Jr.",pos:"SF",age:19,ovr:64,pot:80,school:"TBD",note:"Versatile wing"},
+{n:"Keaton Wagler",pos:"PG",age:21,ovr:68,pot:77,school:"Illinois",note:"Sharp combo guard"},
+{n:"Isaiah Collier Jr.",pos:"PG",age:20,ovr:67,pot:80,school:"USC",note:"Playmaking PG"},
+{n:"Tyler Smith",pos:"PF",age:19,ovr:64,pot:80,school:"Tennessee",note:"Big with range"},
+{n:"Gradey Dick II",pos:"SG",age:19,ovr:66,pot:81,school:"Kansas",note:"Elite shooter"},
+{n:"Malachi Smith",pos:"PG",age:22,ovr:65,pot:75,school:"Gonzaga",note:"Efficient guard"}
+];
+let G={season:2026,phase:"regular",playerTeam:-1,playerName:"You",teams:[],players:[],freeAgents:[],schedule:[],gameResults:[],draftClass:[],draftStarted:false,draftPick:0,draftOrder:[],picks:{},playoffs:null,history:[],news:[],tradeGive:[],tradeReceive:[],tradeGivePicks:[],tradeReceivePicks:[],tradePartner:1,incomingTrades:[],lotteryOrder:[],leagueTab:"pts",standTab:"east",injuries:{},morale:{},ownerPressure:30,awards:{mvp:null,dpoy:null,roy:null,allNBA:[]},waiverOrder:[],extensions:{},leagueId:null,leagueName:null,isHost:false,humanTeams:{},nextPlayerId:1};
+let curPage="dash",supabaseClient=null,realtimeChannel=null;
+const r=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+const rF=(a,b)=>+(Math.random()*(b-a)+a).toFixed(1);
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const oGrade=o=>o>=90?"S":o>=80?"A":o>=70?"B":o>=60?"C":"D";
+const oB=o=>`<span class="ovr o${oGrade(o)}">${o}</span>`;
+const pB=p=>`<span class="pos p${p}">${p}</span>`;
+const f$=n=>"$"+n.toFixed(1)+"M";
+const pct=n=>(n*100).toFixed(1)+"%";
+const nc=id=>`onclick="showPlayer(${id})" style="cursor:pointer;color:var(--t1);font-weight:700"`;
+const addNews=(m,imp=false)=>{G.news.unshift({m,s:G.season,imp,ts:Date.now()});if(imp)updateNotifs();};
+const getT=()=>G.teams[G.playerTeam];
+const getMyP=()=>{const t=getT();return G.players.filter(p=>t.players.includes(p.id)).sort((a,b)=>b.ovr-a.ovr);};
+const getP=id=>G.players.find(p=>p.id===id)||G.freeAgents.find(p=>p.id===id)||G.draftClass.find(p=>p.id===id);
+const isHuman=tid=>G.humanTeams&&G.humanTeams[tid]!==undefined;
+const rc=()=>nav(curPage);
+function updateNotifs(){const el=document.getElementById("incoming-notif");if(el){el.style.display=G.incomingTrades.length?"inline-block":"none";el.textContent=G.incomingTrades.length;}}
+function buildTeams(){
+  G.teams=[];G.players=[];G.picks={};
+  TEAMS_DATA.forEach(td=>{
+    const t={id:td.id,name:td.name,abbr:td.abbr,conf:td.conf,div:td.div,wins:0,losses:0,ptsFor:0,ptsAgainst:0,homeWins:0,homeLosses:0,awayWins:0,awayLosses:0,lastTen:[],streak:0,streakType:"W",players:[]};
+    td.players.forEach(pd=>{const pid=G.nextPlayerId++;G.players.push({id:pid,name:pd.n,pos:pd.pos,age:pd.age,ovr:pd.ovr,pot:pd.pot||pd.ovr,stats:{pts:pd.pts,reb:pd.reb,ast:pd.ast,stl:pd.stl,blk:pd.blk,fgp:pd.fgp,tpp:pd.tpp},contract:{salary:pd.sal,years:pd.yrs},teamId:t.id,school:"",morale:75+r(-10,10)});t.players.push(pid);G.morale[pid]=75+r(-10,10);});
+    G.teams.push(t);
+    G.picks[t.id]=[{id:`${t.id}-2027-1`,year:2027,round:1,fromTeam:t.id,protected:null},{id:`${t.id}-2027-2`,year:2027,round:2,fromTeam:t.id,protected:null},{id:`${t.id}-2028-1`,year:2028,round:1,fromTeam:t.id,protected:null},{id:`${t.id}-2028-2`,year:2028,round:2,fromTeam:t.id,protected:null}];
+  });
+  const FA=[{n:"Dejounte Murray",pos:"PG",age:29,ovr:82,pts:21.8,reb:5.8,ast:7.4,stl:1.8,blk:0.5,fgp:.461,tpp:.331,sal:28,yrs:1},{n:"Fred VanVleet",pos:"PG",age:31,ovr:75,pts:15.8,reb:3.8,ast:7.8,stl:1.5,blk:0.4,fgp:.431,tpp:.368,sal:17,yrs:1},{n:"Gary Trent Jr.",pos:"SG",age:26,ovr:73,pts:14.8,reb:2.8,ast:2.2,stl:1.0,blk:0.2,fgp:.441,tpp:.398,sal:14,yrs:1},{n:"Jeremy Sochan",pos:"PF",age:23,ovr:72,pts:14.2,reb:5.8,ast:3.8,stl:0.9,blk:0.6,fgp:.481,tpp:.318,sal:9,yrs:1},{n:"Georges Niang",pos:"PF",age:32,ovr:66,pts:9.8,reb:3.8,ast:1.8,stl:0.6,blk:0.3,fgp:.451,tpp:.408,sal:5,yrs:1},{n:"Cam Spencer",pos:"SG",age:26,ovr:69,pts:11.4,reb:2.8,ast:4.2,stl:0.9,blk:0.2,fgp:.451,tpp:.408,sal:5,yrs:1},{n:"Kevin Love",pos:"PF",age:37,ovr:66,pts:9.8,reb:7.2,ast:2.8,stl:0.5,blk:0.5,fgp:.468,tpp:.371,sal:7,yrs:1},{n:"Jordan Nwora",pos:"SF",age:27,ovr:63,pts:8.4,reb:4.1,ast:1.5,stl:0.7,blk:0.4,fgp:.441,tpp:.348,sal:3,yrs:1},{n:"Marcus Morris Sr.",pos:"PF",age:35,ovr:63,pts:9.2,reb:4.8,ast:1.8,stl:0.7,blk:0.4,fgp:.441,tpp:.348,sal:4,yrs:1},{n:"Pat Connaughton",pos:"SG",age:32,ovr:64,pts:7.8,reb:3.8,ast:1.8,stl:0.7,blk:0.3,fgp:.441,tpp:.381,sal:4,yrs:1},{n:"Gorgui Dieng",pos:"C",age:35,ovr:62,pts:6.8,reb:6.5,ast:2.2,stl:0.5,blk:0.8,fgp:.501,tpp:.000,sal:3,yrs:1},{n:"Isaiah Roby",pos:"PF",age:26,ovr:64,pts:8.8,reb:4.8,ast:1.8,stl:0.7,blk:0.6,fgp:.481,tpp:.318,sal:4,yrs:1},{n:"Troy Brown Jr.",pos:"SF",age:27,ovr:63,pts:8.4,reb:4.2,ast:2.8,stl:0.8,blk:0.4,fgp:.451,tpp:.338,sal:4,yrs:1},{n:"Javonte Green",pos:"SF",age:30,ovr:63,pts:6.2,reb:3.8,ast:1.2,stl:1.0,blk:0.5,fgp:.501,tpp:.318,sal:3,yrs:1},{n:"Chimezie Metu",pos:"PF",age:28,ovr:63,pts:7.8,reb:4.8,ast:1.4,stl:0.6,blk:0.7,fgp:.471,tpp:.308,sal:3,yrs:1},{n:"Nerlens Noel",pos:"C",age:32,ovr:62,pts:5.2,reb:6.8,ast:0.9,stl:0.7,blk:1.8,fgp:.578,tpp:.000,sal:3,yrs:1},{n:"Lindy Waters III",pos:"SF",age:28,ovr:62,pts:7.4,reb:3.2,ast:1.5,stl:0.7,blk:0.3,fgp:.451,tpp:.368,sal:3,yrs:1},{n:"Shake Milton",pos:"SG",age:28,ovr:67,pts:10.2,reb:2.5,ast:3.5,stl:0.8,blk:0.2,fgp:.451,tpp:.381,sal:5,yrs:1},{n:"Damion Lee",pos:"SG",age:32,ovr:64,pts:8.8,reb:3.2,ast:1.8,stl:0.8,blk:0.2,fgp:.441,tpp:.391,sal:3.5,yrs:1},{n:"Darius Garland",pos:"PG",age:26,ovr:84,pts:22.8,reb:3.8,ast:8.8,stl:1.2,blk:0.3,fgp:.461,tpp:.381,sal:38,yrs:1}];
+  G.freeAgents=FA.map(pd=>{const pid=G.nextPlayerId++;return{id:pid,name:pd.n,pos:pd.pos,age:pd.age,ovr:pd.ovr,pot:pd.ovr+r(0,5),stats:{pts:pd.pts,reb:pd.reb,ast:pd.ast,stl:pd.stl,blk:pd.blk,fgp:pd.fgp,tpp:pd.tpp},contract:{salary:pd.sal,years:pd.yrs},teamId:null,school:"",morale:70};});
+  G.waiverOrder=[...G.teams.map(t=>t.id)];
+}
+function buildDraftClass(){
+  const src=G.season<=2027?DRAFT_2027:G.season===2028?DRAFT_2028:makeGenericDraft();
+  G.draftClass=src.map((d,i)=>{const pid=G.nextPlayerId++;return{id:pid,name:d.n,pos:d.pos,age:d.age,ovr:d.ovr,pot:d.pot,school:d.school||"",note:d.note||"",draftRank:i+1,teamId:null,contract:{salary:+(d.ovr*.22+r(2,5)).toFixed(1),years:4},stats:{pts:+(d.ovr*.18+r(2,6)).toFixed(1),reb:+(d.ovr*.09+r(1,4)).toFixed(1),ast:+(d.ovr*.07+r(0,3)).toFixed(1),stl:+rF(.3,1.8).toFixed(1),blk:+rF(.1,2).toFixed(1),fgp:+(0.39+Math.random()*.1).toFixed(3),tpp:+(0.3+Math.random()*.12).toFixed(3)}};});
+  const g=["Devon Harris","Marcus Jones","Tyree Williams","Cam Anderson","Jordan Smith","Darius Lee","Tyler Green","Jaylen Cooper","DeShawn Thomas","Antoine Davis","Kendall Moore","Isaiah Grant","Brandon Clark","DeAndre Wilson","Marcus Johnson","Trey Robinson","Miles Davis","Chris Green","Andre Thomas","Jaylen Harris","Devon Parker","Jordan Mitchell","Brandon Williams","Chris Moore","Marcus Lee","Tyler Davis","Isaiah Brown","Cameron Clark","Andre Thomas II","Devon Johnson"];
+  while(G.draftClass.length<60){const pid=G.nextPlayerId++,base=r(38,62),pos=pick(["PG","SG","SF","PF","C"]),age=r(19,22);G.draftClass.push({id:pid,name:g[G.draftClass.length-src.length]||`Prospect ${G.draftClass.length+1}`,pos,age,ovr:base,pot:base+r(3,18),school:pick(["Duke","Kentucky","Kansas","UNC","Gonzaga"]),note:"Rising prospect",draftRank:G.draftClass.length+1,teamId:null,contract:{salary:+(base*.2+r(1,3)).toFixed(1),years:4},stats:{pts:+(base*.15+r(2,5)).toFixed(1),reb:+(base*.08+r(1,3)).toFixed(1),ast:+(base*.07+r(0,2)).toFixed(1),stl:+rF(.2,1.5).toFixed(1),blk:+rF(.1,1.5).toFixed(1),fgp:+(0.38+Math.random()*.1).toFixed(3),tpp:+(0.28+Math.random()*.12).toFixed(3)}});}
+  G.draftStarted=false;G.draftPick=0;
+}
+function makeGenericDraft(){return Array.from({length:30},(_,i)=>({n:`Prospect ${G.season}-${i+1}`,pos:pick(["PG","SG","SF","PF","C"]),age:r(19,22),ovr:Math.max(38,76-i*2+r(-4,4)),pot:Math.min(98,84-i+r(-3,3)),school:pick(["Duke","Kentucky","Kansas"]),note:"Rising prospect"}));}
+function generateSchedule(){G.schedule=[];G.gameResults=[];let gid=0;const ids=G.teams.map(t=>t.id);for(let wk=1;wk<=26;wk++){const s=[...ids].sort(()=>Math.random()-.5);for(let i=0;i<s.length-1;i+=2)G.schedule.push({id:gid++,week:wk,home:s[i],away:s[i+1],played:false,homeScore:0,awayScore:0,homeStats:{},awayStats:{}});const s2=[...ids].sort(()=>Math.random()-.5);for(let i=0;i<s2.length-1;i+=2)G.schedule.push({id:gid++,week:wk,home:s2[i+1]||s2[0],away:s2[i],played:false,homeScore:0,awayScore:0,homeStats:{},awayStats:{}});}}
+// SIM ENGINE
+function teamStr(t){const pl=G.players.filter(p=>t.players.includes(p.id)&&!G.injuries[p.id]);if(!pl.length)return 60;return pl.sort((a,b)=>b.ovr-a.ovr).slice(0,8).reduce((s,p)=>s+p.ovr*(G.morale[p.id]||75)/75,0)/8;}
+function simGameDetailed(hId,aId){const hs=teamStr(G.teams[hId])+r(0,12),as=teamStr(G.teams[aId])+r(0,10),base=r(92,124);const hS=Math.round(base+hs*rF(.08,.13)+r(-10,10)),aS=Math.round(base+as*rF(.08,.13)+r(-10,10));const mkBox=(pl,score)=>{const box={};pl.slice(0,8).forEach((p,i)=>{const sh=i<2?.28:i<5?.15:.06;box[p.id]={pts:Math.max(0,Math.round(score*sh+r(-4,4))),reb:Math.round(p.stats.reb*rF(.7,1.4)),ast:Math.round(p.stats.ast*rF(.7,1.4)),stl:+(p.stats.stl*rF(.5,1.5)).toFixed(1),blk:+(p.stats.blk*rF(.5,1.5)).toFixed(1),min:i<5?r(28,38):r(10,25)};});return box;};const hPl=G.players.filter(p=>G.teams[hId].players.includes(p.id)).sort((a,b)=>b.ovr-a.ovr);const aPl=G.players.filter(p=>G.teams[aId].players.includes(p.id)).sort((a,b)=>b.ovr-a.ovr);return{hS,aS,hBox:mkBox(hPl,hS),aBox:mkBox(aPl,aS)};}
+function applyGame(g){const h=G.teams[g.home],a=G.teams[g.away],w=g.homeScore>g.awayScore;h.ptsFor+=g.homeScore;h.ptsAgainst+=g.awayScore;a.ptsFor+=g.awayScore;a.ptsAgainst+=g.homeScore;if(w){h.wins++;h.homeWins++;a.losses++;a.awayLosses++;h.lastTen.push("W");a.lastTen.push("L");h.streak=h.streakType==="W"?h.streak+1:1;h.streakType="W";a.streak=a.streakType==="L"?a.streak+1:1;a.streakType="L";}else{a.wins++;a.awayWins++;h.losses++;h.homeLosses++;h.lastTen.push("L");a.lastTen.push("W");a.streak=a.streakType==="W"?a.streak+1:1;a.streakType="W";h.streak=h.streakType==="L"?h.streak+1:1;h.streakType="L";}if(h.lastTen.length>10)h.lastTen.shift();if(a.lastTen.length>10)a.lastTen.shift();g.played=true;[...h.players,...a.players].forEach(pid=>{if(G.morale[pid]!==undefined){const won=(h.players.includes(pid)&&w)||(a.players.includes(pid)&&!w);G.morale[pid]=Math.min(100,Math.max(30,G.morale[pid]+(won?2:-1)));}});[...h.players,...a.players].forEach(pid=>{if(Math.random()<0.015&&!G.injuries[pid]){const gm=r(2,14);G.injuries[pid]={games:gm,severity:gm>7?"Major":"Minor"};const p=getP(pid);if(p&&p.teamId===G.playerTeam)addNews(`🏥 ${p.name} injured — out ~${gm} games`,true);}else if(G.injuries[pid]){G.injuries[pid].games--;if(G.injuries[pid].games<=0)delete G.injuries[pid];}});if(Math.random()<0.07)generateAITradeOffer();}
+function canSim(){if(G.leagueId&&!G.isHost){toast("⏳ Only the league commissioner can simulate games");return false;}return true;}
+function simNext(){if(!canSim())return;if(G.phase!=="regular"){toast("Not in regular season");return;}const next=G.schedule.find(g=>!g.played);if(!next){toast("Season complete! Go to Playoffs.");return;}const res=simGameDetailed(next.home,next.away);next.homeScore=res.hS;next.awayScore=res.aS;next.homeStats=res.hBox;next.awayStats=res.aBox;applyGame(next);G.gameResults.push({...next});updateSB();const pt=G.playerTeam,iH=next.home===pt;if(next.home===pt||next.away===pt){const opp=G.teams[iH?next.away:next.home],mS=iH?next.homeScore:next.awayScore,oS=iH?next.awayScore:next.homeScore,w=mS>oS;addNews(`${w?"✅ WIN":"❌ LOSS"} — ${getT().name} ${mS}, ${opp.name} ${oS} (Wk ${next.week})`);toast(`${w?"✅ WIN":"❌ LOSS"} vs ${opp.name} — ${mS}-${oS}`);updateOwnerPressure();}else{const h=G.teams[next.home],a=G.teams[next.away];const hHuman=isHuman(next.home),aHuman=isHuman(next.away);if(hHuman||aHuman)addNews(`🏀 ${h.name} ${next.homeScore} - ${next.awayScore} ${a.name} (Wk ${next.week})`);else toast(`${h.abbr} ${next.homeScore}-${next.awayScore} ${a.abbr}`);}if(G.leagueId)syncState();rc();}
+function simWeek(){if(!canSim())return;if(G.phase!=="regular")return;const next=G.schedule.find(g=>!g.played);if(!next)return;const w=next.week;G.schedule.filter(g=>g.week===w&&!g.played).forEach(g=>{const res=simGameDetailed(g.home,g.away);g.homeScore=res.hS;g.awayScore=res.aS;g.homeStats=res.hBox;g.awayStats=res.aBox;applyGame(g);G.gameResults.push({...g});});updateSB();// News for human vs human games this week
+G.gameResults.filter(g=>g.week===w&&(isHuman(g.home)||isHuman(g.away))).forEach(g=>{const h=G.teams[g.home],a=G.teams[g.away];addNews(`🏀 ${h.name} ${g.homeScore} - ${g.awayScore} ${a.name} (Week ${w})`);});if(G.leagueId)syncState();toast(`Week ${w} complete — syncing to all players...`);rc();}
+function simMonth(){for(let i=0;i<4;i++)simWeek();}
+function simAll(){if(!canSim())return;G.schedule.filter(g=>!g.played).forEach(g=>{const res=simGameDetailed(g.home,g.away);g.homeScore=res.hS;g.awayScore=res.aS;g.homeStats=res.hBox;g.awayStats=res.aBox;applyGame(g);G.gameResults.push({...g});});addNews("🏁 Regular season complete!");updateSB();if(G.leagueId)syncState();toast("Season simulated!");rc();}
+function updateOwnerPressure(){const t=getT(),gp=t.wins+t.losses;if(!gp)return;const wpct=t.wins/gp,ct=G.teams.filter(x=>x.conf===t.conf).sort((a,b)=>b.wins-a.wins),seed=ct.findIndex(x=>x.id===t.id)+1;if(wpct>0.6&&seed<=4)G.ownerPressure=Math.max(0,G.ownerPressure-3);else if(wpct<0.4||seed>10)G.ownerPressure=Math.min(100,G.ownerPressure+4);else G.ownerPressure=Math.min(100,Math.max(0,G.ownerPressure+(wpct>0.5?-1:1)));const pf=document.getElementById("pressure-fill");if(pf){pf.style.width=G.ownerPressure+"%";pf.style.background=G.ownerPressure>70?"var(--red)":G.ownerPressure>50?"var(--yellow)":"var(--green)";}document.getElementById("owner-pressure-wrap").style.display="block";if(G.ownerPressure>80)addNews(`🔥 Owner pressure ${G.ownerPressure}% — results needed!`,true);}
+const calcAdv=p=>{if(!p)return{per:0,ts:0,ws:0,bpm:0};const ts=+((p.stats.fgp+p.stats.tpp*.5)*100).toFixed(1),per=+(p.stats.pts*1.5+p.stats.reb*.7+p.stats.ast*1.2+p.stats.stl*3+p.stats.blk*2.5).toFixed(1),ws=+(per/24*.8).toFixed(1),bpm=+(p.ovr/10-5).toFixed(1);return{per,ts,ws,bpm};};
+const isInj=pid=>!!G.injuries[pid];
+const morColor=m=>m>=80?"var(--green)":m>=60?"var(--acc)":m>=40?"var(--yellow)":"var(--red)";
+const morLabel=m=>m>=80?"Happy":m>=60?"Content":m>=40?"Unhappy":"Disgruntled";
+const getTeamPicks=teamId=>G.picks[teamId]||[];
+const pickLabel=pk=>`${pk.year} R${pk.round} (${G.teams.find(t=>t.id===pk.fromTeam)?.abbr||"?"})${pk.protected?` [top-${pk.protected}]`:""}`;
+function updateSB(){const t=getT();document.getElementById("sb-name").textContent=t.name;const sal=G.players.filter(p=>t.players.includes(p.id)).reduce((s,p)=>s+p.contract.salary,0);document.getElementById("sb-rec").textContent=`${t.wins}-${t.losses} · $${sal.toFixed(0)}M`;document.getElementById("sb-sea").textContent=`${G.season-1}-${String(G.season).slice(-2)}`;document.getElementById("sb-ph").textContent=G.phase==="regular"?"Regular Season":G.phase==="playoffs"?"Playoffs":"Offseason";updateNotifs();const pf=document.getElementById("pressure-fill");if(pf){pf.style.width=G.ownerPressure+"%";pf.style.background=G.ownerPressure>70?"var(--red)":G.ownerPressure>50?"var(--yellow)":"var(--green)";}}
+function nav(page){document.querySelectorAll(".nv").forEach(e=>e.classList.remove("active"));document.querySelector(`[data-p="${page}"]`)?.classList.add("active");curPage=page;document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));document.getElementById("page-"+page)?.classList.add("active");const fns={dash:rDash,sched:rSched,stand:rStand,playoffs:rPlayoffs,awards:rAwards,roster:rRoster,depth:rDepth,finances:rFin,scouting:rScout,extensions:rExtensions,trade:rTrade,incoming:rIncoming,fa:rFA,draft:rDraft,waiver:rWaiver,allp:rAllP,lstats:rLStats,power:rPower,history:rHistory,news:rNews,multiplayer:rMultiplayer};fns[page]?.();}
+// DASHBOARD
+function rDash(){const t=getT(),pl=getMyP(),gp=t.wins+t.losses,ppg=gp?(t.ptsFor/gp).toFixed(1):"0.0",opp=gp?(t.ptsAgainst/gp).toFixed(1):"0.0",sal=pl.reduce((s,p)=>s+p.contract.salary,0),ct=G.teams.filter(x=>x.conf===t.conf).sort((a,b)=>b.wins-a.wins||a.losses-b.losses),seed=ct.findIndex(x=>x.id===t.id)+1,myPick=G.lotteryOrder.indexOf(G.playerTeam)+1,injuries=pl.filter(p=>isInj(p.id)),incoming=G.incomingTrades.length;
+document.getElementById("page-dash").innerHTML=`<div class="ph"><div class="ph-left"><div class="pt">${t.name} — <span style="color:var(--acc)">${G.season-1}-${String(G.season).slice(-2)}</span></div><div class="ps">${t.conf}ern · ${t.div}${injuries.length?` · <span style="color:var(--red)">🏥 ${injuries.length} injured</span>`:""}</div></div><div class="ph-actions">${G.leagueId&&!G.isHost?`<span style="font-size:11px;color:var(--yellow);background:rgba(234,179,8,0.1);border:1px solid rgba(234,179,8,0.3);border-radius:6px;padding:6px 12px">⏳ Waiting for commissioner to sim</span>`:`<button class="btn btn-acc btn-sm" onclick="simNext()">▶ Sim</button><button class="btn btn-bl btn-sm" onclick="simWeek()">▶▶ Week</button><button class="btn btn-gr btn-sm" onclick="simAll()">⏭ Season</button>`}</div></div>
+${incoming?`<div style="background:var(--bg2);border:2px solid var(--yellow);border-radius:9px;padding:12px;margin-bottom:14px;cursor:pointer;display:flex;align-items:center;gap:12px" onclick="nav('incoming')"><div style="font-size:24px">📬</div><div><div style="font-weight:800;color:var(--yellow)">📬 ${incoming} Incoming Trade Offer${incoming>1?"s":""}</div><div style="font-size:11px;color:var(--t2)">Click to review</div></div></div>`:""}
+<div class="sg sg4">${[{l:"Record",v:`${t.wins}-${t.losses}`,s:seed<=8?`🏆 #${seed} seed · ${t.conf}`:`⚠️ Outside playoffs (#${seed})`,acc:true},{l:"PPG / OPP",v:ppg,s:`Opp: ${opp} | Diff: ${(+ppg-+opp).toFixed(1)}`},{l:"Team OVR",v:pl.length?Math.round(pl.slice(0,8).reduce((s,p)=>s+p.ovr,0)/8):"--",s:`${pl.length}/15 · Pick #${myPick}`},{l:"Cap Space",v:f$(Math.max(0,136-sal)),s:`Used: ${f$(sal)} / $136M`}].map(c=>`<div class="sc${c.acc?" sc-acc":""}"><div class="lbl">${c.l}</div><div class="val">${c.v}</div><div class="sub">${c.s}</div></div>`).join("")}</div>
+<div class="two-col"><div><div class="sh"><div class="st">📅 Next 4 Games</div></div>${G.schedule.filter(g=>!g.played&&(g.home===t.id||g.away===t.id)).slice(0,4).map(g=>{const iH=g.home===t.id,opp=G.teams[iH?g.away:g.home],diff=Math.round(teamStr(t)-teamStr(opp)),hl=isHuman(opp.id)?` <span class="badge bg-b" style="font-size:9px">👤</span>`:"";return`<div class="gc"><div class="gc-wk">Wk<br><b>${g.week}</b></div><div style="flex:1;display:flex;align-items:center;gap:8px"><span class="badge bg-gr" style="font-size:10px">${iH?"HOME":"AWAY"}</span><b style="color:var(--t1)">${opp.name}</b>${hl}</div><span class="badge ${diff>8?"bg-g":diff>-8?"bg-y":"bg-r"}">${diff>0?"+":""}${diff}</span></div>`;}).join("")||"<div style='color:var(--t3);padding:10px;font-size:11px'>No upcoming</div>"}</div>
+<div><div class="sh"><div class="st">🏁 Recent Results</div></div>${G.schedule.filter(g=>g.played&&(g.home===t.id||g.away===t.id)).slice(-4).reverse().map(g=>{const iH=g.home===t.id,opp=G.teams[iH?g.away:g.home],mS=iH?g.homeScore:g.awayScore,oS=iH?g.awayScore:g.homeScore,w=mS>oS;return`<div class="gc" style="border-left:3px solid ${w?"var(--green)":"var(--red)"}"><span class="badge ${w?"bg-g":"bg-r"}">${w?"W":"L"}</span><div style="flex:1;margin-left:4px"><b style="color:var(--t1)">${opp.name}</b></div><div style="font-size:15px;font-weight:900;color:${w?"var(--green)":"var(--red)"}">${mS}</div><span style="color:var(--t3);margin:0 4px">-</span><div style="font-size:15px;font-weight:900;color:var(--t2)">${oS}</div><button class="btn btn-gr" style="padding:2px 7px;font-size:10px;margin-left:4px" onclick="showBoxScore(${g.id})">Box</button></div>`;}).join("")||"<div style='color:var(--t3);padding:10px;font-size:11px'>No results yet</div>"}</div></div>
+<div style="margin-top:14px"><div class="sh"><div class="st">⭐ Starters</div></div><div class="tw"><table><thead><tr><th>Player</th><th>Pos</th><th>Age</th><th>OVR</th><th>PTS</th><th>REB</th><th>AST</th><th>TS%</th><th>PER</th><th>Status</th></tr></thead><tbody>${pl.slice(0,5).map(p=>{const adv=calcAdv(p),inj=G.injuries[p.id],mor=G.morale[p.id]||75;return`<tr><td><span ${nc(p.id)}>${p.name}</span>${inj?`<span class="injury">INJ</span>`:""}</td><td>${pB(p.pos)}</td><td>${p.age}</td><td>${oB(p.ovr)}</td><td style="color:var(--acc);font-weight:700">${p.stats.pts.toFixed(1)}</td><td>${p.stats.reb.toFixed(1)}</td><td>${p.stats.ast.toFixed(1)}</td><td>${adv.ts}%</td><td style="color:var(--blue)">${adv.per}</td><td>${inj?`<span class="injury">Out ${inj.games}g</span>`:`<span style="font-size:10px;color:${morColor(mor)}">${morLabel(mor)}</span>`}</td></tr>`;}).join("")}</tbody></table></div></div>
+${injuries.length?`<div style="margin-top:10px"><div class="sh"><div class="st">🏥 Injury Report</div></div>${injuries.map(p=>{const inj=G.injuries[p.id];return`<div class="gc"><span class="injury" style="font-size:11px">${inj.severity}</span><div style="flex:1;margin-left:8px"><b style="color:var(--t1)">${p.name}</b> <span style="color:var(--t2)">${p.pos}</span></div><span style="color:var(--t2);font-size:11px">~${inj.games}g out</span></div>`;}).join("")}</div>`:""}
+<div style="margin-top:14px"><div class="sh"><div class="st">📰 Latest News</div></div>${G.news.slice(0,6).map(n=>`<div class="ni" style="${n.imp?"border-left-color:var(--yellow)":""}">${n.m}</div>`).join("")}</div>`;}
+
+// BOX SCORE
+function showBoxScore(gameId){const g=G.gameResults.find(x=>x.id===gameId);if(!g||!g.homeStats||!Object.keys(g.homeStats).length){toast("No box score available");return;}const h=G.teams[g.home],a=G.teams[g.away];const mkT=(tm,stats,score)=>`<div style="margin-bottom:14px"><div style="font-size:13px;font-weight:800;color:var(--t1);margin-bottom:8px">${tm.name} — <span style="color:var(--acc)">${score}</span></div><div class="tw"><table class="box-score-table"><thead><tr><th>Player</th><th>Pos</th><th>Min</th><th>PTS</th><th>REB</th><th>AST</th><th>STL</th><th>BLK</th></tr></thead><tbody>${Object.entries(stats).map(([pid,s])=>{const p=getP(parseInt(pid));if(!p)return"";return`<tr><td><span ${nc(parseInt(pid))}>${p.name}</span></td><td>${pB(p.pos)}</td><td style="color:var(--t2)">${s.min}m</td><td style="color:var(--acc);font-weight:700">${s.pts}</td><td>${s.reb}</td><td>${s.ast}</td><td>${s.stl}</td><td>${s.blk}</td></tr>`;}).join("")}</tbody></table></div></div>`;showModal(`<h2>Box Score</h2><div class="modal-sub">${h.name} vs ${a.name} · Week ${g.week} · Final: ${h.abbr} <b>${g.homeScore}</b> - <b>${g.awayScore}</b> ${a.abbr}</div>${mkT(h,g.homeStats,g.homeScore)}${mkT(a,g.awayStats,g.awayScore)}<div class="mfooter"><button class="btn btn-gr btn-sm" onclick="closeM()">Close</button></div>`);}
+
+// SCHEDULE
+function rSched(){const t=getT();document.getElementById("page-sched").innerHTML=`<div class="ph"><div class="ph-left"><div class="pt">📅 Schedule</div></div><div class="ph-actions"><select id="sf" onchange="renderSchedBody()"><option value="all">All</option><option value="up">Upcoming</option><option value="pl">Played</option></select>${G.leagueId&&!G.isHost?`<span style="font-size:11px;color:var(--yellow);padding:4px 8px">⏳ Commissioner controls sim</span>`:`<button class="btn btn-acc btn-sm" onclick="simNext()">▶ 1</button><button class="btn btn-bl btn-sm" onclick="simWeek()">▶▶ Week</button><button class="btn btn-gr btn-sm" onclick="simMonth()">Month</button><button class="btn btn-gr btn-sm" onclick="simAll()">⏭ Season</button>`}</div></div><div id="sched-body"></div>`;renderSchedBody();}
+function renderSchedBody(){const f=document.getElementById("sf")?.value||"all",t=getT();let games=G.schedule.filter(g=>g.home===t.id||g.away===t.id);if(f==="up")games=games.filter(g=>!g.played);else if(f==="pl")games=games.filter(g=>g.played);document.getElementById("sched-body").innerHTML=games.slice(0,120).map(g=>{const iH=g.home===t.id,opp=G.teams[iH?g.away:g.home],mS=iH?g.homeScore:g.awayScore,oS=iH?g.awayScore:g.homeScore,w=g.played&&mS>oS,hl=isHuman(opp.id)?` <span class="badge bg-b" style="font-size:9px">👤</span>`:"";return`<div class="gc" style="${g.played?(w?"border-left:3px solid var(--green)":"border-left:3px solid var(--red)"):""}"><div class="gc-wk">Wk<br><b>${g.week}</b></div><div style="flex:1;display:flex;align-items:center;gap:8px"><span class="badge bg-gr" style="font-size:10px">${iH?"HOME":"AWAY"}</span><b style="color:var(--t1)">${t.abbr}</b><span style="color:var(--t3)">vs</span><b style="color:var(--t2)">${opp.abbr}</b><span style="color:var(--t2)">${opp.name}</span>${hl}</div>${g.played?`<div style="display:flex;align-items:center;gap:8px"><div style="font-size:16px;font-weight:900;color:${w?"var(--green)":"var(--red)"}">${mS}</div><div style="color:var(--t3)">-</div><div style="font-size:16px;font-weight:900;color:var(--t2)">${oS}</div><span class="badge ${w?"bg-g":"bg-r"}">${w?"W":"L"}</span><button class="btn btn-gr" style="padding:2px 7px;font-size:10px" onclick="showBoxScore(${g.id})">Box</button></div>`:"<span style='color:var(--t3);font-size:11px'>Upcoming</span>"}</div>`;}).join("");}
+
+// STANDINGS
+function setStTab(tab,el){G.standTab=tab;document.querySelectorAll("#page-stand .tab").forEach(t=>t.classList.remove("active"));el.classList.add("active");renderStandTable();}
+function rStand(){document.getElementById("page-stand").innerHTML=`<div class="ph"><div class="ph-left"><div class="pt">🏆 Standings</div></div></div><div class="tabs"><div class="tab active" onclick="setStTab('east',this)">Eastern</div><div class="tab" onclick="setStTab('west',this)">Western</div><div class="tab" onclick="setStTab('all',this)">League</div></div><div class="tw"><table><thead><tr><th>#</th><th>Team</th><th>W</th><th>L</th><th>PCT</th><th>GB</th><th>Home</th><th>Away</th><th>L10</th><th>Streak</th><th>PTS</th><th>OPP</th><th>DIFF</th></tr></thead><tbody id="stand-tb"></tbody></table></div>`;renderStandTable();}
+function renderStandTable(){let teams=G.standTab==="east"?G.teams.filter(t=>t.conf==="East"):G.standTab==="west"?G.teams.filter(t=>t.conf==="West"):[...G.teams];teams=teams.sort((a,b)=>b.wins-a.wins||a.losses-b.losses);const ldr=teams[0];const tb=document.getElementById("stand-tb");if(!tb)return;tb.innerHTML=teams.map((t,i)=>{const gp=t.wins+t.losses,p=gp?(t.wins/gp).toFixed(3):".000",gb=i===0?"-":(((ldr.wins-t.wins)+(t.losses-ldr.losses))/2).toFixed(1),l10=t.lastTen.slice(-10),l10s=l10.length?`${l10.filter(x=>x==="W").length}-${l10.filter(x=>x==="L").length}`:"0-0",ppg=gp?(t.ptsFor/gp).toFixed(1):"0.0",op=gp?(t.ptsAgainst/gp).toFixed(1):"0.0",df=(+ppg-+op).toFixed(1),isP=i<8,isM=t.id===G.playerTeam,isF=isHuman(t.id)&&!isM;return`<tr class="${isP?"playoff-row":""} ${isM?"myrow":isF?"friendrow":""}"><td style="color:var(--t3);font-weight:700">${i+1}</td><td><b style="color:${isM?"var(--acc)":isF?"var(--blue)":"var(--t1)"}">${isM?"★ ":isF?"👤 ":""}${t.name}</b> <span style="color:var(--t3)">${t.abbr}</span></td><td style="color:var(--green);font-weight:800">${t.wins}</td><td style="color:var(--red)">${t.losses}</td><td>${p}</td><td style="color:var(--t3)">${gb}</td><td>${t.homeWins}-${t.homeLosses}</td><td>${t.awayWins}-${t.awayLosses}</td><td>${l10s}</td><td style="color:${t.streakType==="W"?"var(--green)":"var(--red)"};font-weight:700">${t.streak>0?t.streakType+t.streak:"-"}</td><td>${ppg}</td><td style="color:var(--t3)">${op}</td><td style="color:${+df>0?"var(--green)":+df<0?"var(--red)":"var(--t2)"}">${+df>0?"+":""}${df}</td></tr>`;}).join("");}
+
+// PLAYOFFS + PLAY-IN
+function rPlayoffs(){const el=document.getElementById("page-playoffs"),rem=G.schedule.filter(g=>!g.played).length;if(rem>0&&!G.playoffs){el.innerHTML=`<div class="ph"><div class="ph-left"><div class="pt">🥊 Playoffs</div></div></div><div style="text-align:center;padding:40px;background:var(--bg2);border:1px solid var(--bdr);border-radius:10px"><div style="font-size:32px;margin-bottom:10px">🏀</div><div style="font-size:16px;font-weight:800;color:var(--t1);margin-bottom:6px">${rem} games remaining</div><button class="btn btn-acc" style="margin-top:12px" onclick="simAll();nav('playoffs')">Sim Season & Start Playoffs</button></div>`;return;}if(!G.playoffs){el.innerHTML=`<div class="ph"><div class="ph-left"><div class="pt">🥊 Playoffs</div></div></div><div style="text-align:center;padding:40px;background:var(--bg2);border:1px solid var(--acc);border-radius:10px"><div style="font-size:24px;margin-bottom:10px">🏆</div><div style="font-size:16px;font-weight:800;color:var(--t1);margin-bottom:12px">Regular Season Complete!</div><div style="font-size:12px;color:var(--t2);margin-bottom:16px">Seeds 7-10 play in the Play-In Tournament</div><button class="btn btn-acc" onclick="initPlayoffs();nav('playoffs')">Start Playoffs</button></div>`;return;}renderPBracket();}
+function simSeries1(a,b){const sa=teamStr(G.teams[a]),sb=teamStr(G.teams[b]);return sa>sb||(sa===sb&&Math.random()>.5)?a:b;}
+function simSeries(a,b){const wa={[a]:0,[b]:0};while(wa[a]<4&&wa[b]<4){const res=simGameDetailed(a,b);if(res.hS>res.aS)wa[a]++;else wa[b]++;}return wa[a]===4?a:b;}
+function initPlayoffs(){if(!canSim())return;const runPI=(s7,s8,s9,s10)=>{const w78=simSeries1(s7,s8),l78=w78===s7?s8:s7,w910=simSeries1(s9,s10),s8f=simSeries1(l78,w910);return[w78,s8f];};const e=G.teams.filter(t=>t.conf==="East").sort((a,b)=>b.wins-a.wins||a.losses-b.losses).slice(0,10),w=G.teams.filter(t=>t.conf==="West").sort((a,b)=>b.wins-a.wins||a.losses-b.losses).slice(0,10);const ePI=runPI(e[6].id,e[7].id,e[8].id,e[9].id),wPI=runPI(w[6].id,w[7].id,w[8].id,w[9].id);G.playoffs={east:{teams:[...e.slice(0,6).map(t=>t.id),...ePI],winner:null},west:{teams:[...w.slice(0,6).map(t=>t.id),...wPI],winner:null},champion:null};G.phase="playoffs";addNews("🏆 Playoffs begin! Play-In complete.");updateSB();}
+function renderPBracket(){const el=document.getElementById("page-playoffs"),p=G.playoffs;let html=`<div class="ph"><div class="ph-left"><div class="pt">🥊 Playoffs</div></div></div><div class="two-col">`;["east","west"].forEach(conf=>{const teams=p[conf].teams.map(id=>G.teams[id]);html+=`<div><div class="st" style="margin-bottom:10px">${conf==="east"?"🏀 Eastern Conference":"🌟 Western Conference"}</div>${teams.map((t,i)=>{const isM=t.id===G.playerTeam,isF=isHuman(t.id)&&!isM;return`<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--bg2);border:1px solid var(--bdr);border-radius:6px;margin-bottom:3px"><span style="color:var(--acc);font-weight:800;width:18px">${i+1}</span><span style="flex:1;font-weight:700;color:${isM?"var(--acc)":isF?"var(--blue)":"var(--t1)"}">${isM?"★ ":isF?"👤 ":""}${t.name}</span><span style="color:var(--t2);font-size:11px">${t.wins}-${t.losses}</span></div>`;}).join("")}<div style="margin-top:10px">${!p[conf].winner?`<button class="btn btn-acc btn-sm" onclick="simConf('${conf}')">Sim ${conf==="east"?"East":"West"} Playoffs</button>`:`<span class="badge bg-g" style="font-size:12px;padding:5px 12px">🏆 ${G.teams[p[conf].winner].name}</span>`}</div></div>`;});html+=`</div>`;if(p.east.winner&&p.west.winner){html+=`<div style="margin-top:18px;background:var(--bg2);border:2px solid var(--acc);border-radius:10px;padding:20px;text-align:center"><div style="font-size:16px;font-weight:900;color:var(--acc);margin-bottom:12px">🏆 NBA FINALS</div><div style="display:flex;align-items:center;justify-content:center;gap:24px;margin-bottom:16px"><div><div style="font-size:18px;font-weight:900;color:var(--t1)">${G.teams[p.east.winner].name}</div><div style="font-size:10px;color:var(--t2)">East Champion</div></div><div style="font-size:20px;color:var(--acc);font-weight:900">VS</div><div><div style="font-size:18px;font-weight:900;color:var(--t1)">${G.teams[p.west.winner].name}</div><div style="font-size:10px;color:var(--t2)">West Champion</div></div></div>${!p.champion?`<button class="btn btn-acc" onclick="simFinals()">Sim NBA Finals 🏆</button>`:`<div style="font-size:22px;font-weight:900;color:var(--yellow)">🏆 ${G.teams[p.champion].name} are NBA Champions!</div><div style="margin-top:12px"><button class="btn btn-gn" onclick="doOffseason()">→ Start Offseason</button></div>`}</div>`;}el.innerHTML=html;}
+function simConf(conf){if(!canSim())return;const p=G.playoffs,t=p[conf].teams,r1=[simSeries(t[0],t[7]),simSeries(t[1],t[6]),simSeries(t[2],t[5]),simSeries(t[3],t[4])],r2=[simSeries(r1[0],r1[3]),simSeries(r1[1],r1[2])];p[conf].winner=simSeries(r2[0],r2[1]);addNews(`🏆 ${G.teams[p[conf].winner].name} win the ${conf==="east"?"Eastern":"Western"} Conference!`);if(G.leagueId)syncState();renderPBracket();}
+function simFinals(){if(!canSim())return;G.playoffs.champion=simSeries(G.playoffs.east.winner,G.playoffs.west.winner);const c=G.teams[G.playoffs.champion];calcAwards();addNews(`🏆🎉 ${c.name} WIN THE NBA CHAMPIONSHIP!`);if(G.playoffs.champion===G.playerTeam)toast("🏆🎉 CHAMPIONS!");else toast(`🏆 ${c.name} are champions!`);if(G.leagueId)syncState();renderPBracket();}
+
+function doOffseason(){const t=getT();G.history.push({season:G.season,wins:t.wins,losses:t.losses,champion:G.playoffs?.champion,madePlayoffs:G.playoffs?.[t.conf==="East"?"east":"west"]?.teams?.includes(t.id),awards:{...G.awards}});G.season++;G.teams.forEach(tm=>{tm.wins=0;tm.losses=0;tm.homeWins=0;tm.homeLosses=0;tm.awayWins=0;tm.awayLosses=0;tm.lastTen=[];tm.streak=0;tm.streakType="W";tm.ptsFor=0;tm.ptsAgainst=0;});G.players.forEach(p=>{p.age++;if(p.contract.years>0)p.contract.years--;const g=p.age<27?r(-1,4):p.age<30?r(-2,2):r(-4,1);p.ovr=Math.min(99,Math.max(35,p.ovr+g));G.morale[p.id]=Math.min(100,Math.max(30,(G.morale[p.id]||75)+r(-5,10)));});G.freeAgents.forEach(p=>p.age++);const exp=G.players.filter(p=>p.contract.years===0&&p.teamId!==null);exp.forEach(p=>{const tm=G.teams.find(t=>t.id===p.teamId);if(tm)tm.players=tm.players.filter(id=>id!==p.id);p.teamId=null;p.contract.years=r(1,3);G.freeAgents.push(p);});G.players=G.players.filter(p=>p.teamId!==null);G.players.filter(p=>p.age>=37&&Math.random()<0.4).forEach(p=>{addNews(`🏁 ${p.name} retires at age ${p.age}.`);const tm=G.teams.find(t=>t.id===p.teamId);if(tm)tm.players=tm.players.filter(id=>id!==p.id);p.teamId=null;});G.players=G.players.filter(p=>p.teamId!==null);G.teams.filter(t=>t.id!==G.playerTeam).forEach(tm=>{while(tm.players.length<12&&G.freeAgents.length){const best=G.freeAgents.sort((a,b)=>b.ovr-a.ovr)[0];if(!best)break;best.teamId=tm.id;tm.players.push(best.id);G.players.push(best);G.freeAgents=G.freeAgents.filter(x=>x.id!==best.id);}});const newN=["Devon Parker","Chris Moore","Marcus Lee","Tyler Davis","Jordan Smith","Isaiah Brown","Brandon Clark","Cam Williams","Andre Thomas","DeShawn Harris","Mike Johnson","Kyle Williams","Darius Brown","Brandon Davis","Chris Johnson","Tyler Moore","Devon Harris","Marcus Davis","Jordan Lee","Isaiah Clark"];for(let i=0;i<20;i++){const pid=G.nextPlayerId++,pos=pick(["PG","SG","SF","PF","C"]),base=r(52,76);G.freeAgents.push({id:pid,name:newN[i%newN.length]+` '${String(G.season).slice(-2)}`,pos,age:r(22,32),ovr:base,pot:base+r(0,8),stats:{pts:+(base*.18+r(2,5)).toFixed(1),reb:+(base*.09+r(1,3)).toFixed(1),ast:+(base*.07+r(0,3)).toFixed(1),stl:+rF(.3,1.8).toFixed(1),blk:+rF(.1,1.5).toFixed(1),fgp:+(0.41+Math.random()*.1).toFixed(3),tpp:+(0.32+Math.random()*.1).toFixed(3)},contract:{salary:+(base*.22+r(2,5)).toFixed(1),years:r(1,3)},teamId:null,school:"",morale:70});}Object.keys(G.picks).forEach(owner=>{G.picks[owner]=(G.picks[owner]||[]).filter(pk=>pk.year>=G.season);if(!G.picks[owner].find(pk=>pk.year===G.season+1&&pk.round===1))G.picks[owner].push({id:`${owner}-${G.season+1}-1`,year:G.season+1,round:1,fromTeam:parseInt(owner),protected:null});if(!G.picks[owner].find(pk=>pk.year===G.season+1&&pk.round===2))G.picks[owner].push({id:`${owner}-${G.season+1}-2`,year:G.season+1,round:2,fromTeam:parseInt(owner),protected:null});});G.phase="regular";G.playoffs=null;G.injuries={};G.incomingTrades=[];G.awards={mvp:null,dpoy:null,roy:null,allNBA:[]};generateSchedule();buildDraftClass();const lt=[...G.teams].sort((a,b)=>a.wins-b.wins||b.losses-a.losses).slice(0,14);G.lotteryOrder=runLotteryAlgorithm(lt);const myP=G.lotteryOrder.indexOf(G.playerTeam)+1;addNews(`🏀 Season ${G.season-1}-${String(G.season).slice(-2)} starts! ${exp.length} contracts expired.`);addNews(`🎱 ${G.season} Draft Lottery: ${G.teams[G.lotteryOrder[0]].name} picks #1. You pick #${myP}.`);updateSB();if(G.leagueId)syncState();toast(`New season! You pick #${myP} in the ${G.season} draft.`);nav("dash");}
+
+// AWARDS
+function calcAwards(){const pl=G.players.filter(p=>p.teamId!==null),mvp=pl.slice().sort((a,b)=>(b.stats.pts+b.stats.reb*.5+b.stats.ast)-(a.stats.pts+a.stats.reb*.5+a.stats.ast))[0],dpoy=pl.slice().sort((a,b)=>(b.stats.stl+b.stats.blk+b.ovr*.05)-(a.stats.stl+a.stats.blk+a.ovr*.05))[0],roy=pl.filter(p=>p.age<=22).sort((a,b)=>b.stats.pts-a.stats.pts)[0],allNBA=pl.slice().sort((a,b)=>b.ovr-a.ovr).slice(0,15).map(p=>p.id);G.awards={mvp:mvp?.id,dpoy:dpoy?.id,roy:roy?.id,allNBA};if(mvp)addNews(`🏆 MVP: ${mvp.name} — ${mvp.stats.pts.toFixed(1)} pts, ${mvp.stats.reb.toFixed(1)} reb, ${mvp.stats.ast.toFixed(1)} ast`,true);if(dpoy)addNews(`🛡️ DPOY: ${dpoy.name}`);if(roy)addNews(`🌟 ROY: ${roy.name} — ${roy.stats.pts.toFixed(1)} pts/game`);}
+function rAwards(){const el=document.getElementById("page-awards"),showA=(lbl,pid,stat)=>{const p=getP(pid);if(!p)return`<div class="award-card"><div style="color:var(--t3)">TBD</div></div>`;const tm=G.teams.find(t=>t.id===p.teamId);return`<div class="award-card"><div style="font-size:28px;margin-right:12px">${lbl.slice(0,2)}</div><div style="flex:1"><div style="font-size:13px;font-weight:900;color:var(--yellow)">${lbl}</div><div style="font-size:14px;font-weight:800;color:var(--t1);margin-top:2px">${p.name}</div><div style="font-size:11px;color:var(--t2)">${p.pos} · ${tm?.name||"—"} · ${stat}</div></div>${oB(p.ovr)}</div>`;};const a=G.awards||{},mvpP=getP(a.mvp),dpoyP=getP(a.dpoy),royP=getP(a.roy);el.innerHTML=`<div class="ph"><div class="ph-left"><div class="pt">🏅 Season Awards</div></div></div><div style="margin-bottom:16px"><div class="st" style="margin-bottom:10px">Individual Awards</div>${!mvpP?`<div class="ni">Awards calculated after the NBA Finals</div>`:showA("🏆 Most Valuable Player",a.mvp,`${mvpP.stats.pts.toFixed(1)} PTS · ${mvpP.stats.reb.toFixed(1)} REB · ${mvpP.stats.ast.toFixed(1)} AST`)}${dpoyP?showA("🛡️ Defensive Player of Year",a.dpoy,`${dpoyP.stats.stl.toFixed(1)} STL · ${dpoyP.stats.blk.toFixed(1)} BLK`):""}${royP?showA("🌟 Rookie of the Year",a.roy,`${royP.stats.pts.toFixed(1)} PTS · Age ${royP.age}`):""}
+</div>${a.allNBA?.length?`<div class="st" style="margin-bottom:10px">All-NBA First Team</div><div class="tw"><table><thead><tr><th>Player</th><th>Team</th><th>Pos</th><th>OVR</th><th>PTS</th><th>REB</th><th>AST</th><th>PER</th></tr></thead><tbody>${a.allNBA.slice(0,5).map(pid=>{const p=getP(pid);if(!p)return"";const tm=G.teams.find(t=>t.id===p.teamId),adv=calcAdv(p);return`<tr><td><span ${nc(p.id)}>${p.name}</span></td><td>${tm?.abbr||"—"}</td><td>${pB(p.pos)}</td><td>${oB(p.ovr)}</td><td style="color:var(--acc);font-weight:700">${p.stats.pts.toFixed(1)}</td><td>${p.stats.reb.toFixed(1)}</td><td>${p.stats.ast.toFixed(1)}</td><td style="color:var(--blue)">${adv.per}</td></tr>`;}).join("")}</tbody></table></div>`:""}`);}
+// ROSTER
+function rRoster(){const t=getT(),pl=getMyP(),sal=pl.reduce((s,p)=>s+p.contract.salary,0);document.getElementById("page-roster").innerHTML=`<div class="ph"><div class="ph-left"><div class="pt">👥 Roster</div><div class="ps">$${sal.toFixed(1)}M/$136M · ${pl.length}/15</div></div><div class="ph-actions"><select id="rsort" onchange="sortRoster()"><option value="ovr">OVR</option><option value="pts">PTS</option><option value="salary">Salary</option><option value="age">Age</option><option value="pos">Pos</option></select></div></div><div class="tw"><table><thead><tr><th>Player</th><th>Pos</th><th>Age</th><th>OVR</th><th>POT</th><th>PTS</th><th>REB</th><th>AST</th><th>TS%</th><th>PER</th><th>WS</th><th>Salary</th><th>Yrs</th><th>Morale</th><th>Status</th><th></th></tr></thead><tbody id="roster-tb"></tbody></table></div>`;renderRosterTable(pl);}
+function sortRoster(){const s=document.getElementById("rsort")?.value||"ovr";let pl=getMyP();if(s==="pts")pl.sort((a,b)=>b.stats.pts-a.stats.pts);else if(s==="salary")pl.sort((a,b)=>b.contract.salary-a.contract.salary);else if(s==="age")pl.sort((a,b)=>a.age-b.age);else if(s==="pos"){const o={PG:0,SG:1,SF:2,PF:3,C:4};pl.sort((a,b)=>o[a.pos]-o[b.pos]);}renderRosterTable(pl);}
+function renderRosterTable(pl){const tb=document.getElementById("roster-tb");if(!tb)return;tb.innerHTML=pl.map(p=>{const adv=calcAdv(p),inj=G.injuries[p.id],mor=G.morale[p.id]||75;return`<tr><td><span ${nc(p.id)}>${p.name}</span>${inj?`<span class="injury">INJ</span>`:""}</td><td>${pB(p.pos)}</td><td>${p.age}</td><td>${oB(p.ovr)}</td><td style="color:var(--purple)">${p.pot}</td><td style="color:var(--acc);font-weight:700">${p.stats.pts.toFixed(1)}</td><td>${p.stats.reb.toFixed(1)}</td><td>${p.stats.ast.toFixed(1)}</td><td>${adv.ts}%</td><td style="color:var(--blue)">${adv.per}</td><td style="color:var(--green)">${adv.ws}</td><td style="color:${p.contract.salary>30?"var(--red)":p.contract.salary>20?"var(--yellow)":"var(--t1)"}">${f$(p.contract.salary)}</td><td>${p.contract.years}yr</td><td><div style="font-size:10px;color:${morColor(mor)}">${morLabel(mor)}</div><div class="morale-bar" style="width:50px"><div class="morale-fill" style="width:${mor}%;background:${morColor(mor)}"></div></div></td><td>${inj?`<span style="font-size:10px;color:var(--red)">Out ${inj.games}g</span>`:"<span style='font-size:10px;color:var(--green)'>Active</span>"}</td><td><button class="btn btn-rd btn-xs" onclick="relP(${p.id})">Cut</button></td></tr>`;}).join("");}
+function relP(pid){const p=getP(pid);if(!p)return;if(!confirm(`Release ${p.name}?`))return;const t=getT();t.players=t.players.filter(id=>id!==pid);p.teamId=null;G.freeAgents.push(p);addNews(`✂️ ${t.name} released ${p.name}.`);toast(`Released ${p.name}`);updateSB();rRoster();}
+// DEPTH
+function rDepth(){const pl=getMyP(),pos=["PG","SG","SF","PF","C"],names={PG:"🎯 Point Guard",SG:"🏹 Shooting Guard",SF:"🦅 Small Forward",PF:"💪 Power Forward",C:"🏔️ Center"};document.getElementById("page-depth").innerHTML=`<div class="ph"><div class="ph-left"><div class="pt">📋 Depth Chart</div></div></div>`+pos.map(p=>{const pp=pl.filter(x=>x.pos===p);return`<div style="margin-bottom:16px"><div style="display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--bg2);border:1px solid var(--bdr);border-radius:7px 7px 0 0;border-bottom:none"><div class="st">${names[p]}</div><span class="badge bg-gr">${pp.length}</span></div>${pp.length?pp.map((px,i)=>`<div style="display:flex;align-items:center;gap:12px;padding:9px 14px;background:var(--bg1);border:1px solid var(--bdr);${i===0?"border-left:3px solid var(--acc)":i===1?"border-left:3px solid var(--blue)":"border-left:3px solid var(--t3)"}"><div style="width:22px;height:22px;background:${i===0?"var(--acc)":i===1?"var(--blue)":"var(--bg4)"};border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:900;color:white;flex-shrink:0">${i+1}</div><div style="flex:1"><div style="font-weight:700;color:var(--t1)">${px.name}${G.injuries[px.id]?`<span class="injury">INJ</span>`:""}</div><div style="font-size:10px;color:var(--t2)">${px.stats.pts.toFixed(1)}pts · ${px.stats.reb.toFixed(1)}reb · ${px.stats.ast.toFixed(1)}ast | ${f$(px.contract.salary)}/yr</div></div>${oB(px.ovr)}</div>`).join(""):`<div style="padding:10px 14px;background:var(--bg1);border:1px solid var(--bdr);color:var(--t3);font-size:12px">No ${p} on roster</div>`}</div>`;}).join("");}
+// FINANCES
+function rFin(){const t=getT(),pl=getMyP(),sal=pl.reduce((s,p)=>s+p.contract.salary,0),cap=136,tax=165;document.getElementById("page-finances").innerHTML=`<div class="ph"><div class="ph-left"><div class="pt">💰 Finances</div></div></div><div class="sg sg3">${[{l:"Total Salary",v:f$(sal),s:`${pl.length} contracts`},{l:"Cap Space",v:f$(Math.max(0,cap-sal)),s:sal>tax?"⚠️ Luxury tax!":sal>cap?"⚠️ Over cap":"✅ Under cap"},{l:"Luxury Tax",v:sal>tax?f$((sal-tax)*1.75):"$0M",s:sal>tax?`$${(sal-tax).toFixed(1)}M @ 1.75x`:"None owed"}].map(c=>`<div class="sc"><div class="lbl">${c.l}</div><div class="val">${c.v}</div><div class="sub">${c.s}</div></div>`).join("")}</div><div style="background:var(--bg2);border:1px solid var(--bdr);border-radius:7px;padding:12px;margin-bottom:12px"><div style="display:flex;justify-content:space-between;font-size:11px;color:var(--t2);margin-bottom:5px"><span>${f$(sal)}</span><span>Soft Cap $${cap}M</span><span>Luxury $${tax}M</span></div><div class="salbar"><div class="salbar-f" style="width:${Math.min(100,(sal/cap)*100)}%;background:${sal>tax?"var(--red)":sal>cap?"var(--yellow)":"var(--green)"}"></div></div></div><div class="tw"><table><thead><tr><th>Player</th><th>Pos</th><th>OVR</th><th>Salary</th><th>Cap%</th><th>Yrs</th><th>Total</th><th>Action</th></tr></thead><tbody>${pl.sort((a,b)=>b.contract.salary-a.contract.salary).map(p=>`<tr><td><span ${nc(p.id)}>${p.name}</span></td><td>${pB(p.pos)}</td><td>${oB(p.ovr)}</td><td><div style="font-weight:700;color:${p.contract.salary>30?"var(--red)":p.contract.salary>20?"var(--yellow)":"var(--t1)"}">${f$(p.contract.salary)}</div><div class="cbar"><div class="cbar-f" style="width:${Math.min(100,(p.contract.salary/45)*100)}%"></div></div></td><td style="color:var(--t2)">${sal>0?((p.contract.salary/sal)*100).toFixed(1):0}%</td><td>${p.contract.years}yr</td><td>${f$(p.contract.salary*p.contract.years)}</td><td style="display:flex;gap:4px"><button class="btn btn-rd btn-xs" onclick="relP(${p.id})">Cut</button><button class="btn btn-bl btn-xs" onclick="nav('extensions')">Ext</button></td></tr>`).join("")}</tbody></table></div>`;}
+// SCOUTING
+function rScout(){const t=getT(),pl=getMyP(),myOvr=pl.length?Math.round(pl.slice(0,8).reduce((s,p)=>s+p.ovr,0)/8):60,conf=G.teams.filter(tm=>tm.conf===t.conf&&tm.id!==t.id).sort((a,b)=>b.wins-a.wins).slice(0,10);document.getElementById("page-scouting").innerHTML=`<div class="ph"><div class="ph-left"><div class="pt">🔭 Scouting Report</div><div class="ps">Your OVR: ${myOvr}</div></div></div><div class="sh" style="margin-bottom:10px"><div class="st">Conference Opponents</div></div>${conf.map(tm=>{const opl=G.players.filter(p=>tm.players.includes(p.id)).sort((a,b)=>b.ovr-a.ovr),avg=Math.round(opl.slice(0,8).reduce((s,p)=>s+p.ovr,0)/8||0),df=avg-myOvr,isF=isHuman(tm.id);return`<div style="display:flex;align-items:center;gap:12px;padding:9px 13px;background:var(--bg2);border:1px solid var(--bdr);border-radius:7px;margin-bottom:5px"><div style="flex:1"><div style="font-weight:700;color:${isF?"var(--blue)":"var(--t1)"}">${isF?"👤 ":""}${tm.name} (${tm.wins}-${tm.losses})</div><div style="font-size:10px;color:var(--t2)">${opl.slice(0,3).map(p=>p.name).join(", ")}</div></div><div style="text-align:center;width:50px"><div style="font-size:10px;color:var(--t3)">OVR</div><div style="font-size:16px;font-weight:900;color:var(--t1)">${avg}</div></div><span class="badge ${df>8?"bg-r":df>0?"bg-y":"bg-g"}">${df>0?"+":""}${df}</span></div>`;}).join("")}<div class="sh" style="margin-top:16px;margin-bottom:10px"><div class="st">Next 5 Opponents</div></div>${G.schedule.filter(g=>!g.played&&(g.home===t.id||g.away===t.id)).slice(0,5).map(g=>{const iH=g.home===t.id,opp=G.teams[iH?g.away:g.home],oppP=G.players.filter(p=>opp.players.includes(p.id)).sort((a,b)=>b.ovr-a.ovr),oppStr=Math.round(oppP.slice(0,8).reduce((s,p)=>s+p.ovr,0)/8||0),df=oppStr-myOvr;return`<div style="padding:9px 13px;background:var(--bg1);border:1px solid var(--bdr);border-radius:7px;margin-bottom:5px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:5px"><span class="badge bg-gr">Wk ${g.week}</span><b style="color:var(--t1)">${iH?"HOME":"AWAY"} vs ${opp.name}</b><span class="badge ${df>8?"bg-r":df>0?"bg-y":"bg-g"}">${df>0?"+":""}${df} OVR</span></div><div style="font-size:11px;color:var(--t2)">${oppP.slice(0,3).map(p=>`${p.name} (${p.ovr})`).join(" · ")}</div></div>`;}).join("")||"<div style='color:var(--t3);padding:10px'>No upcoming</div>"}`;}
+// EXTENSIONS
+function rExtensions(){const pl=getMyP().filter(p=>p.contract.years<=2);document.getElementById("page-extensions").innerHTML=`<div class="ph"><div class="ph-left"><div class="pt">📝 Extensions</div><div class="ps">Players with ≤2 years remaining</div></div></div>${pl.length?`<div class="tw"><table><thead><tr><th>Player</th><th>Pos</th><th>Age</th><th>OVR</th><th>Current</th><th>Yrs Left</th><th>Asking</th><th>Action</th></tr></thead><tbody>${pl.map(p=>{const askSal=+(p.contract.salary*(1.05+Math.random()*.15)).toFixed(1),askYrs=r(3,5);return`<tr><td><span ${nc(p.id)}>${p.name}</span></td><td>${pB(p.pos)}</td><td>${p.age}</td><td>${oB(p.ovr)}</td><td>${f$(p.contract.salary)}/yr</td><td>${p.contract.years}yr</td><td>${f$(askSal)}/yr × ${askYrs}yr</td><td style="display:flex;gap:4px"><button class="btn btn-gn btn-xs" onclick="signExt(${p.id},${askSal},${askYrs})">Sign</button></td></tr>`;}).join("")}</tbody></table></div>`:`<div style="text-align:center;padding:30px;color:var(--t3)">No players eligible for extensions</div>`}`;}
+function signExt(pid,sal,yrs){const p=getP(pid);if(!p)return;p.contract={salary:sal,years:yrs};addNews(`📝 ${getT().name} extended ${p.name} — ${f$(sal)}/yr × ${yrs}yr`);toast(`Extended ${p.name}!`);G.morale[pid]=Math.min(100,(G.morale[pid]||75)+15);rExtensions();}
+// TRADE CENTER with pick trading
+function rTrade(){const t=getT(),pl=getMyP();document.getElementById("page-trade").innerHTML=`<div class="ph"><div class="ph-left"><div class="pt">🔄 Trade Center</div></div></div><div class="two-col"><div><div class="sh"><div class="st">${t.name} (You)</div></div><div id="trade-my"></div><div class="sh" style="margin-top:10px"><div class="st" style="font-size:11px;color:var(--t3);text-transform:uppercase">Your Draft Picks</div></div><div id="trade-my-picks"></div></div><div><div class="sh"><div class="st">Trade Partner</div><select id="trade-psel" onchange="loadTradePartner()">${G.teams.filter(tm=>tm.id!==t.id).map(tm=>`<option value="${tm.id}"${tm.id===G.tradePartner?" selected":""}>${isHuman(tm.id)?"👤 ":""}${tm.name}</option>`).join("")}</select></div><div id="trade-their"></div><div class="sh" style="margin-top:10px"><div class="st" style="font-size:11px;color:var(--t3);text-transform:uppercase">Their Draft Picks</div></div><div id="trade-their-picks"></div></div></div><div style="background:var(--bg2);border:1px solid var(--bdr);border-radius:9px;padding:14px;margin-top:12px"><div class="st" style="margin-bottom:10px">📦 Trade Offer</div><div class="two-col"><div><div style="font-size:10px;color:var(--t3);font-weight:700;text-transform:uppercase;margin-bottom:5px">YOU GIVE</div><div id="tgive" style="background:var(--bg1);border:1px dashed var(--bdr);border-radius:6px;padding:8px;min-height:50px;font-size:11px;color:var(--t3)">Select players/picks</div></div><div><div style="font-size:10px;color:var(--t3);font-weight:700;text-transform:uppercase;margin-bottom:5px">YOU GET</div><div id="tget" style="background:var(--bg1);border:1px dashed var(--bdr);border-radius:6px;padding:8px;min-height:50px;font-size:11px;color:var(--t3)">Select players/picks</div></div></div><div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;padding-top:10px;border-top:1px solid var(--bdr)"><div id="teval" style="font-size:12px;color:var(--t2)">Select players/picks to evaluate</div><div style="display:flex;gap:8px"><button class="btn btn-gr btn-sm" onclick="clrTrade()">Clear</button><button class="btn btn-acc btn-sm" onclick="propTrade()">Propose Trade</button></div></div></div>`;renderTradeLists();}
+function renderTradeLists(){const t=getT(),pl=getMyP(),partner=G.teams[G.tradePartner],ppl=G.players.filter(p=>partner.players.includes(p.id)).sort((a,b)=>b.ovr-a.ovr),myPicks=getTeamPicks(G.playerTeam),theirPicks=getTeamPicks(G.tradePartner);document.getElementById("trade-my").innerHTML=pl.map(p=>{const s=G.tradeGive.includes(p.id);return`<div class="pr ${s?"sel":""}" onclick="toggleT('g',${p.id})"><span style="color:${s?"var(--acc)":"var(--t3)"};width:16px">${s?"✓":"○"}</span><div style="flex:1"><div style="font-size:12px;font-weight:700;color:var(--t1)">${p.name}</div><div style="font-size:10px;color:var(--t2)">${p.pos} · OVR ${p.ovr} · ${f$(p.contract.salary)}</div></div>${oB(p.ovr)}</div>`;}).join("");document.getElementById("trade-my-picks").innerHTML=myPicks.map(pk=>{const s=G.tradeGivePicks.includes(pk.id);return`<div class="pr ${s?"sel":""}" onclick="toggleTPick('g','${pk.id}')"><span style="color:${s?"var(--acc)":"var(--t3)"};width:16px">${s?"✓":"○"}</span><div style="flex:1"><div style="font-size:11px;font-weight:700;color:var(--yellow)">🎱 ${pickLabel(pk)}</div></div></div>`;}).join("")||"<div style='font-size:11px;color:var(--t3);padding:6px'>No picks</div>";document.getElementById("trade-their").innerHTML=ppl.map(p=>{const s=G.tradeReceive.includes(p.id);return`<div class="pr ${s?"sel-b":""}" onclick="toggleT('r',${p.id})"><span style="color:${s?"var(--blue)":"var(--t3)"};width:16px">${s?"✓":"○"}</span><div style="flex:1"><div style="font-size:12px;font-weight:700;color:var(--t1)">${p.name}</div><div style="font-size:10px;color:var(--t2)">${p.pos} · OVR ${p.ovr} · ${f$(p.contract.salary)}</div></div>${oB(p.ovr)}</div>`;}).join("");document.getElementById("trade-their-picks").innerHTML=theirPicks.map(pk=>{const s=G.tradeReceivePicks.includes(pk.id);return`<div class="pr ${s?"sel-b":""}" onclick="toggleTPick('r','${pk.id}')"><span style="color:${s?"var(--blue)":"var(--t3)"};width:16px">${s?"✓":"○"}</span><div style="flex:1"><div style="font-size:11px;font-weight:700;color:var(--yellow)">🎱 ${pickLabel(pk)}</div></div></div>`;}).join("")||"<div style='font-size:11px;color:var(--t3);padding:6px'>No picks</div>";updateTradeEval();}
+function loadTradePartner(){G.tradePartner=parseInt(document.getElementById("trade-psel").value);G.tradeReceive=[];G.tradeReceivePicks=[];renderTradeLists();}
+function toggleT(side,pid){if(side==="g")G.tradeGive=G.tradeGive.includes(pid)?G.tradeGive.filter(x=>x!==pid):[...G.tradeGive,pid];else G.tradeReceive=G.tradeReceive.includes(pid)?G.tradeReceive.filter(x=>x!==pid):[...G.tradeReceive,pid];renderTradeLists();}
+function toggleTPick(side,id){if(side==="g")G.tradeGivePicks=G.tradeGivePicks.includes(id)?G.tradeGivePicks.filter(x=>x!==id):[...G.tradeGivePicks,id];else G.tradeReceivePicks=G.tradeReceivePicks.includes(id)?G.tradeReceivePicks.filter(x=>x!==id):[...G.tradeReceivePicks,id];renderTradeLists();}
+function pickVal(ids){return ids.reduce((s,id)=>{const pk=Object.values(G.picks).flat().find(p=>p.id===id);if(!pk)return s;return s+(pk.round===1?35:15)-(pk.year-G.season)*3;},0);}
+function updateTradeEval(){const gp=G.players.filter(p=>G.tradeGive.includes(p.id)),rp=G.players.filter(p=>G.tradeReceive.includes(p.id)),gpv=pickVal(G.tradeGivePicks),rpv=pickVal(G.tradeReceivePicks);document.getElementById("tgive").innerHTML=(gp.length||G.tradeGivePicks.length)?[...gp.map(p=>`<div style="padding:4px 0;border-bottom:1px solid var(--bdr);font-size:12px"><b style="color:var(--t1)">${p.name}</b> <span style="color:var(--t2)">${p.pos} · ${oB(p.ovr)} · ${f$(p.contract.salary)}</span></div>`), ...G.tradeGivePicks.map(id=>{const pk=Object.values(G.picks).flat().find(p=>p.id===id);return pk?`<div style="padding:4px 0;font-size:11px;color:var(--yellow)">🎱 ${pickLabel(pk)}</div>`:""})].join(""):"<span style='color:var(--t3)'>None</span>";document.getElementById("tget").innerHTML=(rp.length||G.tradeReceivePicks.length)?[...rp.map(p=>`<div style="padding:4px 0;border-bottom:1px solid var(--bdr);font-size:12px"><b style="color:var(--t1)">${p.name}</b> <span style="color:var(--t2)">${p.pos} · ${oB(p.ovr)} · ${f$(p.contract.salary)}</span></div>`), ...G.tradeReceivePicks.map(id=>{const pk=Object.values(G.picks).flat().find(p=>p.id===id);return pk?`<div style="padding:4px 0;font-size:11px;color:var(--yellow)">🎱 ${pickLabel(pk)}</div>`:""})].join(""):"<span style='color:var(--t3)'>None</span>";if(gp.length||rp.length||G.tradeGivePicks.length||G.tradeReceivePicks.length){const gv=gp.reduce((s,p)=>s+p.ovr,0)+gpv,rv=rp.reduce((s,p)=>s+p.ovr,0)+rpv,d=rv-gv;let e=Math.abs(d)<=5?`<span style="color:var(--green)">✅ Fair trade</span>`:d>5&&d<=15?`<span style="color:var(--green)">📈 You gain ${d} value</span>`:d>15?`<span style="color:var(--yellow)">⚠️ Very lopsided (you gain ${d})</span>`:d<-5&&d>=-15?`<span style="color:var(--yellow)">📉 You give up ${Math.abs(d)} value</span>`:`<span style="color:var(--red)">❌ Very lopsided — you lose ${Math.abs(d)}</span>`;document.getElementById("teval").innerHTML=e+` | Sal: ${f$(gp.reduce((s,p)=>s+p.contract.salary,0))} → ${f$(rp.reduce((s,p)=>s+p.contract.salary,0))}`;}}
+function clrTrade(){G.tradeGive=[];G.tradeReceive=[];G.tradeGivePicks=[];G.tradeReceivePicks=[];renderTradeLists();}
+function propTrade(){if(!G.tradeGive.length&&!G.tradeGivePicks.length){toast("Select players or picks to offer");return;}if(!G.tradeReceive.length&&!G.tradeReceivePicks.length){toast("Select what you want in return");return;}if(isHuman(G.tradePartner)&&G.leagueId&&supabaseClient){sendMultiplayerTrade();return;}const gp=G.players.filter(p=>G.tradeGive.includes(p.id)),rp=G.players.filter(p=>G.tradeReceive.includes(p.id)),gv=gp.reduce((s,p)=>s+p.ovr,0)+pickVal(G.tradeGivePicks),rv=rp.reduce((s,p)=>s+p.ovr,0)+pickVal(G.tradeReceivePicks),d=gv-rv,acc=d>=12?.92:d>=0?.72:d>=-12?.38:.08;if(Math.random()<acc){executeTrade(gp.map(p=>p.id),rp.map(p=>p.id),G.tradeGivePicks,G.tradeReceivePicks,G.playerTeam,G.tradePartner);G.tradeGive=[];G.tradeReceive=[];G.tradeGivePicks=[];G.tradeReceivePicks=[];toast(`✅ Trade accepted! Got: ${rp.map(p=>p.name).join(", ")||"picks"}`);updateSB();rTrade();}else toast(`❌ ${G.teams[G.tradePartner].name} rejected the trade`);}
+function executeTrade(giveIds,recvIds,givePicks,recvPicks,fromT,toT){const myT=G.teams[fromT],pT=G.teams[toT];const gp=G.players.filter(p=>giveIds.includes(p.id)),rp=G.players.filter(p=>recvIds.includes(p.id));gp.forEach(p=>{myT.players=myT.players.filter(id=>id!==p.id);p.teamId=toT;pT.players.push(p.id);});rp.forEach(p=>{pT.players=pT.players.filter(id=>id!==p.id);p.teamId=fromT;myT.players.push(p.id);});givePicks.forEach(id=>{const picks=G.picks[fromT]||[],idx=picks.findIndex(p=>p.id===id);if(idx>=0){const pk=picks.splice(idx,1)[0];G.picks[toT]=(G.picks[toT]||[]).concat(pk);}});recvPicks.forEach(id=>{const picks=G.picks[toT]||[],idx=picks.findIndex(p=>p.id===id);if(idx>=0){const pk=picks.splice(idx,1)[0];G.picks[fromT]=(G.picks[fromT]||[]).concat(pk);}});addNews(`🔄 Trade: ${myT.name} gets ${rp.map(p=>p.name).concat(recvPicks.map(id=>pickLabel(Object.values(G.picks).flat().find(p=>p.id===id)||{year:0,round:0,fromTeam:0}))).join(", ")||"picks"} from ${pT.name}`);if(G.leagueId&&supabaseClient){syncState();toast("Trade synced to all league players!");};}
+// INCOMING TRADES (AI + human)
+function generateAITradeOffer(){if(G.incomingTrades.length>=3)return;const src=pick(G.teams.filter(t=>t.id!==G.playerTeam)),myPl=getMyP().filter(p=>!isInj(p.id)),theirPl=G.players.filter(p=>src.players.includes(p.id)&&!isInj(p.id));if(!myPl.length||!theirPl.length)return;const target=pick(theirPl.filter(p=>p.ovr>=60).slice(0,6)||theirPl),offer_p=myPl[Math.floor(Math.random()*Math.min(5,myPl.length))];if(!target||!offer_p)return;G.incomingTrades.push({id:`ai-${Date.now()}-${r(0,999)}`,fromTeam:src.id,give:[target.id],givePicks:[],receive:[offer_p.id],receivePicks:[]});addNews(`📬 ${src.name} proposed a trade involving ${offer_p.name}`,true);updateNotifs();}
+function rIncoming(){const el=document.getElementById("page-incoming");if(!G.incomingTrades.length){el.innerHTML=`<div class="ph"><div class="ph-left"><div class="pt">📬 Trade Offers</div></div></div><div style="text-align:center;padding:40px;color:var(--t3)">No pending trade offers</div>`;return;}el.innerHTML=`<div class="ph"><div class="ph-left"><div class="pt">📬 Trade Offers</div><div class="ps">${G.incomingTrades.length} pending offer${G.incomingTrades.length>1?"s":""}</div></div></div>${G.incomingTrades.map((offer,idx)=>{const srcTeam=G.teams[offer.fromTeam],theyGive=G.players.filter(p=>offer.give.includes(p.id)),theyWant=G.players.filter(p=>offer.receive.includes(p.id)),giveVal=theyGive.reduce((s,p)=>s+p.ovr,0)+pickVal(offer.givePicks),recVal=theyWant.reduce((s,p)=>s+p.ovr,0)+pickVal(offer.receivePicks),diff=giveVal-recVal,isF=isHuman(offer.fromTeam);return`<div class="trade-offer-card"><div class="toc-header"><div style="font-size:20px">${isF?"👤":"🤖"}</div><div><div style="font-weight:800;color:var(--yellow)">${isF?"Human Player":"AI Team"}: ${srcTeam.name}</div><div style="font-size:11px;color:var(--t2)">${isF?"Your league mate":"AI offer"}</div></div></div><div class="two-col" style="margin-bottom:12px"><div><div style="font-size:10px;color:var(--t3);font-weight:700;margin-bottom:5px">THEY GIVE YOU</div>${theyGive.map(p=>`<div style="padding:5px 0;font-size:12px"><b style="color:var(--t1)">${p.name}</b> <span style="color:var(--t2)">${p.pos} · ${oB(p.ovr)} · ${f$(p.contract.salary)}</span></div>`).join("")}${offer.givePicks.map(id=>{const pk=Object.values(G.picks).flat().find(p=>p.id===id);return pk?`<div style="font-size:11px;color:var(--yellow)">🎱 ${pickLabel(pk)}</div>`:"";}).join("")}</div><div><div style="font-size:10px;color:var(--t3);font-weight:700;margin-bottom:5px">THEY WANT</div>${theyWant.map(p=>`<div style="padding:5px 0;font-size:12px"><b style="color:var(--t1)">${p.name}</b> <span style="color:var(--t2)">${p.pos} · ${oB(p.ovr)} · ${f$(p.contract.salary)}</span></div>`).join("")}${offer.receivePicks.map(id=>{const pk=Object.values(G.picks).flat().find(p=>p.id===id);return pk?`<div style="font-size:11px;color:var(--yellow)">🎱 ${pickLabel(pk)}</div>`:"";}).join("")}</div></div><div style="display:flex;align-items:center;justify-content:space-between"><span class="badge ${Math.abs(diff)<=5?"bg-g":diff>0?"bg-g":diff>-12?"bg-y":"bg-r"}">${Math.abs(diff)<=5?"Fair":diff>0?`You gain ${diff}`:`You give up ${Math.abs(diff)}`}</span><div style="display:flex;gap:8px"><button class="btn btn-gn btn-sm" onclick="acceptOffer(${idx})">✅ Accept</button><button class="btn btn-gr btn-sm" onclick="counterOffer(${idx})">Counter</button><button class="btn btn-rd btn-sm" onclick="rejectOffer(${idx})">❌ Reject</button></div></div></div>`;}).join("")};updateNotifs();}
+function acceptOffer(idx){const o=G.incomingTrades[idx];if(!o)return;executeTrade(o.give,o.receive,o.givePicks,o.receivePicks,o.fromTeam,G.playerTeam);G.incomingTrades.splice(idx,1);toast(`✅ Trade accepted!`);updateSB();rIncoming();}
+function rejectOffer(idx){const o=G.incomingTrades[idx];if(!o)return;G.incomingTrades.splice(idx,1);toast(`❌ Rejected`);rIncoming();updateNotifs();}
+function counterOffer(idx){const o=G.incomingTrades[idx];if(!o)return;G.tradePartner=o.fromTeam;G.tradeReceive=[...o.give];G.tradeReceivePicks=[...o.givePicks];G.tradeGive=[...o.receive];G.tradeGivePicks=[...o.receivePicks];G.incomingTrades.splice(idx,1);nav("trade");toast("Counter offer loaded in Trade Center");}
+// FREE AGENCY
+function rFA(){const t=getT(),pl=getMyP(),sal=pl.reduce((s,p)=>s+p.contract.salary,0);document.getElementById("page-fa").innerHTML=`<div class="ph"><div class="ph-left"><div class="pt">✍️ Free Agency</div><div class="ps">${G.freeAgents.length} agents · Cap: ${f$(Math.max(0,136-sal))}</div></div></div><div class="fr"><select id="fa-pos" onchange="renderFATable()"><option value="all">All Pos</option><option value="PG">PG</option><option value="SG">SG</option><option value="SF">SF</option><option value="PF">PF</option><option value="C">C</option></select><select id="fa-sort" onchange="renderFATable()"><option value="ovr">OVR</option><option value="pts">PTS</option><option value="sal">Salary</option><option value="age">Age</option></select><input type="text" id="fa-srch" placeholder="Search..." oninput="renderFATable()" style="width:160px"></div><div class="tw"><table><thead><tr><th>Player</th><th>Pos</th><th>Age</th><th>OVR</th><th>POT</th><th>PTS</th><th>REB</th><th>AST</th><th>TS%</th><th>Asking</th><th>Yrs</th><th>Interest</th><th></th></tr></thead><tbody id="fa-tb"></tbody></table></div>`;renderFATable();}
+function renderFATable(){const pos=document.getElementById("fa-pos")?.value||"all",srt=document.getElementById("fa-sort")?.value||"ovr",srch=document.getElementById("fa-srch")?.value?.toLowerCase()||"",t=getT(),pl=getMyP(),sal=pl.reduce((s,p)=>s+p.contract.salary,0);let fas=[...G.freeAgents];if(pos!=="all")fas=fas.filter(p=>p.pos===pos);if(srch)fas=fas.filter(p=>p.name.toLowerCase().includes(srch));if(srt==="pts")fas.sort((a,b)=>b.stats.pts-a.stats.pts);else if(srt==="sal")fas.sort((a,b)=>a.contract.salary-b.contract.salary);else if(srt==="age")fas.sort((a,b)=>a.age-b.age);else fas.sort((a,b)=>b.ovr-a.ovr);const canSign=pl.length<15,tb=document.getElementById("fa-tb");if(!tb)return;tb.innerHTML=fas.slice(0,60).map(p=>{const interest=p.ovr>=85?"High":p.ovr>=75?"Medium":"Low",ic=interest==="High"?"bg-g":interest==="Medium"?"bg-y":"bg-gr",afford=p.contract.salary<=(136-sal),adv=calcAdv(p);return`<tr><td><span ${nc(p.id)}>${p.name}</span></td><td>${pB(p.pos)}</td><td>${p.age}</td><td>${oB(p.ovr)}</td><td style="color:var(--purple)">${p.pot}</td><td style="color:var(--acc);font-weight:700">${p.stats.pts.toFixed(1)}</td><td>${p.stats.reb.toFixed(1)}</td><td>${p.stats.ast.toFixed(1)}</td><td>${adv.ts}%</td><td style="color:${afford?"var(--t1)":"var(--red)"}">${f$(p.contract.salary)}</td><td>${p.contract.years}yr</td><td><span class="badge ${ic}">${interest}</span></td><td>${canSign&&afford?`<button class="btn btn-gn btn-xs" onclick="signFA(${p.id})">Sign</button>`:`<span style="font-size:10px;color:var(--t3)">${!canSign?"Full":"Cap"}</span>`}</td></tr>`;}).join("");}
+function signFA(pid){const p=G.freeAgents.find(x=>x.id===pid);if(!p)return;const t=getT();if(t.players.length>=15){toast("Roster full!");return;}p.teamId=G.playerTeam;t.players.push(p.id);G.freeAgents=G.freeAgents.filter(x=>x.id!==pid);if(!G.players.find(x=>x.id===pid))G.players.push(p);addNews(`✍️ ${t.name} signed ${p.name} (${f$(p.contract.salary)}/yr)`);toast(`✅ Signed ${p.name} — ${f$(p.contract.salary)}/yr × ${p.contract.years}yr`);updateSB();renderFATable();}
+// WAIVER
+function rWaiver(){const wp=G.freeAgents.filter(p=>p.ovr<72).sort((a,b)=>b.ovr-a.ovr),t=getT(),pl=getMyP(),sal=pl.reduce((s,p)=>s+p.contract.salary,0);document.getElementById("page-waiver").innerHTML=`<div class="ph"><div class="ph-left"><div class="pt">📋 Waiver Wire</div><div class="ps">Released players available on minimum deals</div></div></div><div style="background:var(--bg2);border:1px solid var(--bdr);border-radius:7px;padding:10px 14px;margin-bottom:12px;font-size:11px;color:var(--t2)">Your priority: <b style="color:var(--acc)">#${(G.waiverOrder.indexOf(G.playerTeam)+1)||"—"}</b> (worst record goes first)</div><div class="tw"><table><thead><tr><th>Player</th><th>Pos</th><th>Age</th><th>OVR</th><th>PTS</th><th>REB</th><th>AST</th><th>Min Salary</th><th></th></tr></thead><tbody>${wp.slice(0,30).map(p=>`<tr><td><span ${nc(p.id)}>${p.name}</span></td><td>${pB(p.pos)}</td><td>${p.age}</td><td>${oB(p.ovr)}</td><td>${p.stats.pts.toFixed(1)}</td><td>${p.stats.reb.toFixed(1)}</td><td>${p.stats.ast.toFixed(1)}</td><td>${f$(p.contract.salary)}</td><td>${pl.length<15&&p.contract.salary<=(136-sal)?`<button class="btn btn-gn btn-xs" onclick="signFA(${p.id})">Claim</button>`:`<span style="font-size:10px;color:var(--t3)">Unavail</span>`}</td></tr>`).join("")}</tbody></table></div>`;}
+// DRAFT
+function rDraft(){const el=document.getElementById("page-draft"),rem=G.schedule.filter(g=>!g.played).length,myPick=G.lotteryOrder.indexOf(G.playerTeam)+1;if(rem>0&&!G.draftStarted){el.innerHTML=`<div class="ph"><div class="ph-left"><div class="pt">🎓 ${G.season} NBA Draft</div><div class="ps">Your pick: <b style="color:var(--acc)">#${myPick}</b> · ${rem} games remaining</div></div><div class="ph-actions"><button class="btn btn-acc btn-sm" onclick="simAll();nav('draft')">⏭ Sim & Draft</button></div></div><div class="sh" style="margin-bottom:10px"><div class="st">Top Prospects</div></div><div class="tw"><table><thead><tr><th>Rank</th><th>Player</th><th>School</th><th>Pos</th><th>Age</th><th>OVR</th><th>POT</th><th>PTS</th><th>REB</th><th>AST</th><th>Notes</th></tr></thead><tbody>${G.draftClass.slice(0,25).map(p=>`<tr style="${p.draftRank===myPick?"background:rgba(249,115,22,0.06)":""}"><td style="color:${p.draftRank===myPick?"var(--acc)":"var(--t3)"};font-weight:${p.draftRank===myPick?900:400}">${p.draftRank===myPick?"★ ":""}#${p.draftRank}</td><td><span ${nc(p.id)}>${p.name}</span></td><td style="color:var(--t2)">${p.school||"—"}</td><td>${pB(p.pos)}</td><td>${p.age}</td><td>${oB(p.ovr)}</td><td style="color:var(--purple);font-weight:700">${p.pot}</td><td style="color:var(--acc)">${p.stats.pts.toFixed(1)}</td><td>${p.stats.reb.toFixed(1)}</td><td>${p.stats.ast.toFixed(1)}</td><td style="font-size:10px;color:var(--t3)">${p.note||""}</td></tr>`).join("")}</tbody></table></div>`;return;}if(!G.draftStarted&&rem===0){el.innerHTML=`<div class="ph"><div class="ph-left"><div class="pt">🎓 ${G.season} NBA Draft</div><div class="ps">Your pick: <b style="color:var(--acc)">#${myPick}</b></div></div></div><div style="background:var(--bg2);border:1px solid var(--acc);border-radius:10px;padding:20px;margin-bottom:16px;display:flex;align-items:center;gap:20px"><div style="width:60px;height:60px;background:var(--acc);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:900;color:white;flex-shrink:0">${myPick}</div><div><div style="font-size:16px;font-weight:800;color:var(--t1)">You hold the #${myPick} pick</div><div style="font-size:12px;color:var(--t2);margin-top:4px">Best at your slot: <b style="color:var(--acc)">${G.draftClass.filter(p=>!p.teamId)[myPick-1]?.name||G.draftClass.filter(p=>!p.teamId)[0]?.name||"TBD"}</b></div></div><button class="btn btn-acc" style="margin-left:auto" onclick="startDraft()">Start Draft</button></div><div class="tw"><table><thead><tr><th>Rank</th><th>Player</th><th>School</th><th>Pos</th><th>Age</th><th>OVR</th><th>POT</th><th>PTS</th><th>REB</th><th>AST</th><th>Notes</th></tr></thead><tbody>${G.draftClass.slice(0,30).map(p=>`<tr style="${p.draftRank===myPick?"background:rgba(249,115,22,0.06)":""}"><td style="color:${p.draftRank===myPick?"var(--acc)":"var(--t3)"};font-weight:${p.draftRank===myPick?900:400}">${p.draftRank===myPick?"★ ":""}#${p.draftRank}</td><td><span ${nc(p.id)}>${p.name}</span></td><td style="color:var(--t2)">${p.school||"—"}</td><td>${pB(p.pos)}</td><td>${p.age}</td><td>${oB(p.ovr)}</td><td style="color:var(--purple);font-weight:700">${p.pot}</td><td style="color:var(--acc)">${p.stats.pts.toFixed(1)}</td><td>${p.stats.reb.toFixed(1)}</td><td>${p.stats.ast.toFixed(1)}</td><td style="font-size:10px;color:var(--t3)">${p.note||""}</td></tr>`).join("")}</tbody></table></div>`;return;}if(G.draftPick>=60){el.innerHTML=`<div class="ph"><div class="ph-left"><div class="pt">🎓 Draft Complete</div></div></div><div style="text-align:center;padding:40px;background:var(--bg2);border:1px solid var(--green);border-radius:10px"><div style="font-size:32px;margin-bottom:10px">🎉</div><div style="font-size:18px;font-weight:900;color:var(--green);margin-bottom:8px">Draft Complete!</div><button class="btn btn-acc" onclick="doOffseason()">Start Offseason →</button></div>`;return;}const avail=G.draftClass.filter(p=>!p.teamId).slice(0,20);el.innerHTML=`<div class="ph"><div class="ph-left"><div class="pt">🎓 ${G.season} Draft</div></div></div><div style="background:var(--bg2);border:1px solid var(--acc);border-radius:10px;padding:16px;margin-bottom:14px;display:flex;align-items:center;gap:16px"><div style="width:52px;height:52px;background:var(--acc);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;color:white;flex-shrink:0">${G.draftPick+1}</div><div><div style="font-size:15px;font-weight:800;color:var(--t1)">Pick #${G.draftPick+1} — ${getT().name} on the clock</div><div style="font-size:11px;color:var(--t2)">Round ${Math.floor(G.draftPick/30)+1} · Pick ${(G.draftPick%30)+1}</div></div></div><div class="tw"><table><thead><tr><th>Rank</th><th>Player</th><th>School</th><th>Pos</th><th>Age</th><th>OVR</th><th>POT</th><th>PTS</th><th>REB</th><th>AST</th><th>Notes</th><th></th></tr></thead><tbody>${avail.map(p=>`<tr><td style="color:var(--acc);font-weight:800">#${p.draftRank}</td><td><span ${nc(p.id)}>${p.name}</span></td><td style="color:var(--t2)">${p.school||"—"}</td><td>${pB(p.pos)}</td><td>${p.age}</td><td>${oB(p.ovr)}</td><td style="color:var(--purple);font-weight:700">${p.pot}</td><td style="color:var(--acc)">${p.stats.pts.toFixed(1)}</td><td>${p.stats.reb.toFixed(1)}</td><td>${p.stats.ast.toFixed(1)}</td><td style="font-size:10px;color:var(--t3)">${p.note||""}</td><td><button class="btn btn-acc btn-xs" onclick="draftP(${p.id})">Draft</button></td></tr>`).join("")}</tbody></table></div>`;}
+function startDraft(){G.draftStarted=true;G.draftPick=0;G.draftOrder=[...G.lotteryOrder];G.teams.forEach(t=>{if(!G.draftOrder.includes(t.id))G.draftOrder.push(t.id);});const mySlot=G.draftOrder.indexOf(G.playerTeam);for(let i=0;i<mySlot;i++){const best=G.draftClass.filter(p=>!p.teamId)[0];if(!best)break;const tid=G.draftOrder[i%G.draftOrder.length],tm=G.teams.find(t=>t.id===tid);if(tm&&tm.players.length<15){best.teamId=tid;tm.players.push(best.id);G.players.push(best);}G.draftPick++;}rDraft();}
+function draftP(pid){const p=G.draftClass.find(x=>x.id===pid);if(!p)return;const t=getT();p.teamId=G.playerTeam;t.players.push(p.id);G.players.push(p);G.draftPick++;addNews(`🎓 ${t.name} drafted ${p.name} (#${G.draftPick}) — ${p.pos}, OVR ${p.ovr}, POT ${p.pot}`);toast(`✅ Drafted ${p.name}! OVR ${p.ovr} / POT ${p.pot}`);const nextTurn=G.draftOrder.indexOf(G.playerTeam)+30;while(G.draftPick<60){if(G.draftPick===nextTurn)break;const best=G.draftClass.filter(x=>!x.teamId)[0];if(!best)break;const tid=G.draftOrder[G.draftPick%G.draftOrder.length]||G.draftOrder[0],tm=G.teams.find(t=>t.id===tid);if(tm&&tm.players.length<15){best.teamId=tid;tm.players.push(best.id);G.players.push(best);}G.draftPick++;}updateSB();rDraft();}
+// ALL PLAYERS
+function rAllP(){document.getElementById("page-allp").innerHTML=`<div class="ph"><div class="ph-left"><div class="pt">⭐ All Players</div></div></div><div class="fr"><select id="ap-pos" onchange="renderAPTable()"><option value="all">All Pos</option><option value="PG">PG</option><option value="SG">SG</option><option value="SF">SF</option><option value="PF">PF</option><option value="C">C</option></select><select id="ap-team" onchange="renderAPTable()"><option value="all">All Teams</option>${G.teams.map(t=>`<option value="${t.id}">${t.name}</option>`).join("")}<option value="fa">Free Agents</option></select><select id="ap-sort" onchange="renderAPTable()"><option value="ovr">OVR</option><option value="pts">PTS</option><option value="reb">REB</option><option value="ast">AST</option><option value="per">PER</option><option value="sal">Salary</option></select><input type="text" id="ap-srch" placeholder="Search..." oninput="renderAPTable()" style="width:160px"></div><div class="tw"><table><thead><tr><th>Player</th><th>Team</th><th>Pos</th><th>Age</th><th>OVR</th><th>POT</th><th>PTS</th><th>REB</th><th>AST</th><th>TS%</th><th>PER</th><th>WS</th><th>BPM</th><th>Salary</th><th>Yrs</th></tr></thead><tbody id="ap-tb"></tbody></table></div>`;renderAPTable();}
+function renderAPTable(){const pos=document.getElementById("ap-pos")?.value||"all",team=document.getElementById("ap-team")?.value||"all",srt=document.getElementById("ap-sort")?.value||"ovr",srch=document.getElementById("ap-srch")?.value?.toLowerCase()||"";let pl=team==="fa"?[...G.freeAgents]:[...G.players,...G.freeAgents];if(team!=="all"&&team!=="fa")pl=pl.filter(p=>p.teamId===parseInt(team));if(pos!=="all")pl=pl.filter(p=>p.pos===pos);if(srch)pl=pl.filter(p=>p.name.toLowerCase().includes(srch));if(srt==="pts")pl.sort((a,b)=>b.stats.pts-a.stats.pts);else if(srt==="reb")pl.sort((a,b)=>b.stats.reb-a.stats.reb);else if(srt==="ast")pl.sort((a,b)=>b.stats.ast-a.stats.ast);else if(srt==="per")pl.sort((a,b)=>calcAdv(b).per-calcAdv(a).per);else if(srt==="sal")pl.sort((a,b)=>b.contract.salary-a.contract.salary);else pl.sort((a,b)=>b.ovr-a.ovr);const tb=document.getElementById("ap-tb");if(!tb)return;tb.innerHTML=pl.slice(0,120).map(p=>{const tm=p.teamId!==null?G.teams.find(t=>t.id===p.teamId):null,isMe=tm&&tm.id===G.playerTeam,isF=isHuman(tm?.id||null)&&!isMe,adv=calcAdv(p);return`<tr style="${isMe?"background:rgba(249,115,22,0.04)":isF?"background:rgba(59,130,246,0.04)":""}"><td><span ${nc(p.id)}>${p.name}</span>${isMe?`<span class="badge bg-a" style="margin-left:4px;font-size:9px">YOU</span>`:isF?`<span class="badge bg-b" style="margin-left:4px;font-size:9px">👤</span>`:""}</td><td style="font-size:11px;color:var(--t2)">${tm?tm.name:"<i style='color:var(--yellow)'>FA</i>"}</td><td>${pB(p.pos)}</td><td>${p.age}</td><td>${oB(p.ovr)}</td><td style="color:var(--purple)">${p.pot}</td><td style="color:var(--acc);font-weight:700">${p.stats.pts.toFixed(1)}</td><td>${p.stats.reb.toFixed(1)}</td><td>${p.stats.ast.toFixed(1)}</td><td>${adv.ts}%</td><td style="color:var(--blue)">${adv.per}</td><td style="color:var(--green)">${adv.ws}</td><td style="color:${adv.bpm>0?"var(--green)":"var(--red)"}">${adv.bpm>0?"+":""}${adv.bpm}</td><td>${f$(p.contract.salary)}</td><td>${p.contract.years}yr</td></tr>`;}).join("");}
+// LEAGUE STATS
+function setLTab(tab,el){G.leagueTab=tab;document.querySelectorAll("#page-lstats .tab").forEach(t=>t.classList.remove("active"));el.classList.add("active");renderLStatsTable();}
+function rLStats(){document.getElementById("page-lstats").innerHTML=`<div class="ph"><div class="ph-left"><div class="pt">📈 League Stats Leaders</div></div></div><div class="tabs"><div class="tab active" onclick="setLTab('pts',this)">Points</div><div class="tab" onclick="setLTab('reb',this)">Rebounds</div><div class="tab" onclick="setLTab('ast',this)">Assists</div><div class="tab" onclick="setLTab('stl',this)">Steals</div><div class="tab" onclick="setLTab('blk',this)">Blocks</div><div class="tab" onclick="setLTab('per',this)">PER</div><div class="tab" onclick="setLTab('ovr',this)">Best OVR</div></div><div class="tw"><table><thead><tr><th>#</th><th>Player</th><th>Team</th><th>Pos</th><th>OVR</th><th>PTS</th><th>REB</th><th>AST</th><th>STL</th><th>BLK</th><th>TS%</th><th>PER</th><th>WS</th><th>BPM</th></tr></thead><tbody id="lstats-tb"></tbody></table></div>`;renderLStatsTable();}
+function renderLStatsTable(){const tab=G.leagueTab||"pts";let pl=[...G.players];if(tab==="ovr")pl.sort((a,b)=>b.ovr-a.ovr);else if(tab==="per")pl.sort((a,b)=>calcAdv(b).per-calcAdv(a).per);else pl.sort((a,b)=>b.stats[tab]-a.stats[tab]);const tb=document.getElementById("lstats-tb");if(!tb)return;tb.innerHTML=pl.slice(0,50).map((p,i)=>{const tm=p.teamId!==null?G.teams.find(t=>t.id===p.teamId):null,isMe=tm&&tm.id===G.playerTeam,adv=calcAdv(p);return`<tr style="${isMe?"background:rgba(249,115,22,0.05)":""}"><td style="color:var(--t3);font-weight:700">${i+1}</td><td><span ${nc(p.id)}>${p.name}</span>${isMe?`<span class="badge bg-a" style="margin-left:4px;font-size:9px">YOUR TEAM</span>`:""}</td><td style="color:var(--t2);font-size:11px">${tm?tm.abbr:"FA"}</td><td>${pB(p.pos)}</td><td>${oB(p.ovr)}</td><td style="color:${tab==="pts"?"var(--acc)":"var(--t2)"};font-weight:${tab==="pts"?700:400}">${p.stats.pts.toFixed(1)}</td><td style="color:${tab==="reb"?"var(--acc)":"var(--t2)"};font-weight:${tab==="reb"?700:400}">${p.stats.reb.toFixed(1)}</td><td style="color:${tab==="ast"?"var(--acc)":"var(--t2)"};font-weight:${tab==="ast"?700:400}">${p.stats.ast.toFixed(1)}</td><td style="color:${tab==="stl"?"var(--acc)":"var(--t2)"};font-weight:${tab==="stl"?700:400}">${p.stats.stl.toFixed(1)}</td><td style="color:${tab==="blk"?"var(--acc)":"var(--t2)"};font-weight:${tab==="blk"?700:400}">${p.stats.blk.toFixed(1)}</td><td>${adv.ts}%</td><td style="color:${tab==="per"?"var(--blue)":"var(--t2)"};font-weight:${tab==="per"?700:400}">${adv.per}</td><td style="color:var(--green)">${adv.ws}</td><td style="color:${adv.bpm>0?"var(--green)":"var(--red)"}">${adv.bpm>0?"+":""}${adv.bpm}</td></tr>`;}).join("");}
+// POWER RANKINGS
+function rPower(){const teams=[...G.teams].map(t=>{const pl=G.players.filter(p=>t.players.includes(p.id)),avgOvr=pl.length?Math.round(pl.sort((a,b)=>b.ovr-a.ovr).slice(0,8).reduce((s,p)=>s+p.ovr,0)/8):60,gp=t.wins+t.losses,wPct=gp?t.wins/gp:0,score=Math.round(avgOvr*.4+wPct*100*.6);return{...t,avgOvr,score};}).sort((a,b)=>b.score-a.score);document.getElementById("page-power").innerHTML=`<div class="ph"><div class="ph-left"><div class="pt">⚡ Power Rankings</div><div class="ps">Combined OVR + Win% score</div></div></div><div class="tw"><table><thead><tr><th>Rank</th><th>Team</th><th>Score</th><th>Record</th><th>OVR</th><th>Top Player</th><th>Conf Seed</th></tr></thead><tbody>${teams.map((t,i)=>{const top=G.players.filter(p=>t.players.includes(p.id)).sort((a,b)=>b.ovr-a.ovr)[0],ct=G.teams.filter(x=>x.conf===t.conf).sort((a,b)=>b.wins-a.wins||a.losses-b.losses),seed=ct.findIndex(x=>x.id===t.id)+1,isMe=t.id===G.playerTeam,isF=isHuman(t.id)&&!isMe;return`<tr style="${isMe?"background:rgba(249,115,22,0.04)":isF?"background:rgba(59,130,246,0.04)":""}"><td><div style="font-size:18px;font-weight:900;color:${i<3?"var(--yellow)":i<8?"var(--acc)":"var(--t3)"}">${i+1}</div></td><td><b style="color:${isMe?"var(--acc)":isF?"var(--blue)":"var(--t1)"}">${isMe?"★ ":isF?"👤 ":""}${t.name}</b></td><td><b style="font-size:14px;color:var(--acc)">${t.score}</b></td><td>${t.wins}-${t.losses}</td><td>${oB(t.avgOvr)}</td><td style="color:var(--t2);font-size:11px">${top?top.name:"—"}</td><td><span class="badge ${seed<=8?"bg-g":"bg-gr"}">${t.conf} #${seed}</span></td></tr>`;}).join("")}</tbody></table></div>`;}
+// HISTORY
+function rHistory(){const el=document.getElementById("page-history");if(!G.history.length){el.innerHTML=`<div class="ph"><div class="ph-left"><div class="pt">📜 History</div></div></div><div style="text-align:center;padding:40px;color:var(--t3)">Complete a season to see history.</div>`;return;}el.innerHTML=`<div class="ph"><div class="ph-left"><div class="pt">📜 History</div></div></div><div class="tw"><table><thead><tr><th>Season</th><th>W</th><th>L</th><th>PCT</th><th>Playoffs</th><th>Champion</th><th>MVP</th></tr></thead><tbody>${G.history.map(h=>{const gp=h.wins+h.losses,p=gp?(h.wins/gp).toFixed(3):".000",champ=h.champion!=null?G.teams.find(t=>t.id===h.champion)?.name||"Unknown":"—",isC=h.champion===G.playerTeam,mvp=h.awards?.mvp?getP(h.awards.mvp)?.name||"—":"—";return`<tr><td style="color:var(--acc);font-weight:800">${h.season-1}-${String(h.season).slice(-2)}</td><td style="color:var(--green);font-weight:700">${h.wins}</td><td style="color:var(--red)">${h.losses}</td><td>${p}</td><td><span class="badge ${h.madePlayoffs?"bg-g":"bg-r"}">${h.madePlayoffs?"✅ Yes":"❌ No"}</span></td><td style="color:${isC?"var(--yellow)":"var(--t2)"}">${isC?"🏆 ":""}${champ}</td><td style="color:var(--t2);font-size:11px">${mvp}</td></tr>`;}).join("")}</tbody></table></div>`;}
+// NEWS
+function rNews(){document.getElementById("page-news").innerHTML=`<div class="ph"><div class="ph-left"><div class="pt">📰 News Feed</div></div></div>`+(G.news.length?G.news.map(n=>`<div class="ni" style="${n.imp?"border-left-color:var(--yellow)":""}">${n.m}</div>`).join(""):"<div style='color:var(--t3);padding:20px'>No news yet.</div>");}
+// PLAYER MODAL
+function showPlayer(id){const p=getP(id);if(!p)return;const tm=p.teamId!==null?G.teams.find(t=>t.id===p.teamId):null,isMe=tm&&tm.id===G.playerTeam,isFa=p.teamId===null;if(!p.attr){const base=p.ovr,pos=p.pos;p.attr={ins:Math.min(99,Math.max(20,base+(["PG","SG"].includes(pos)?r(-5,8):r(-12,5)))),mid:Math.min(99,Math.max(20,base+r(-10,10))),thr:Math.min(99,Math.max(20,base+(["C","PF"].includes(pos)?r(-18,2):r(-8,10)))),ft:Math.min(99,Math.max(20,base+r(-6,6))),drb:Math.min(99,Math.max(20,pos==="PG"?base+r(0,10):base-r(0,12))),pas:Math.min(99,Math.max(20,pos==="PG"?base+r(0,8):base+r(-8,4))),reb:Math.min(99,Math.max(20,["C","PF"].includes(pos)?base+r(0,8):base-r(0,12))),def:Math.min(99,Math.max(20,base+r(-6,6))),spd:Math.min(99,Math.max(20,base+r(-6,6))),str:Math.min(99,Math.max(20,base+r(-6,6)))};}
+const attrs=[["ins","Inside"],["mid","Mid-Range"],["thr","3-Point"],["ft","Free Throw"],["drb","Dribbling"],["pas","Passing"],["reb","Rebounding"],["def","Defense"],["spd","Speed"],["str","Strength"]];const ac=v=>v>=85?"var(--green)":v>=70?"var(--acc)":v>=55?"var(--blue)":"var(--t3)";const adv=calcAdv(p),inj=G.injuries[p.id],mor=G.morale[p.id]||75;
+document.getElementById("modal-root").innerHTML=`<div class="modal-bg" onclick="if(event.target===this)closeM()"><div class="modal"><h2>${p.name}${inj?`<span class="injury" style="margin-left:8px">${inj.severity}</span>`:""}</h2><div class="modal-sub">${pB(p.pos)} ${oB(p.ovr)} <span>Age ${p.age}</span> <span style="color:var(--purple)">POT ${p.pot}</span> ${tm?`<span class="badge bg-gr">${tm.name}</span>`:"<span class='badge bg-y'>Free Agent</span>"} ${p.school?`<span style="color:var(--t3);font-size:10px">${p.school}</span>`:""}</div>${p.note?`<div style="font-size:11px;color:var(--t3);margin-bottom:12px;font-style:italic">"${p.note}"</div>`:""}
+<div class="two-col"><div><div style="font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">Season Stats & Advanced</div>${[["PTS/G",p.stats.pts.toFixed(1),"var(--acc)"],["REB/G",p.stats.reb.toFixed(1),"var(--blue)"],["AST/G",p.stats.ast.toFixed(1),"var(--green)"],["STL/G",p.stats.stl.toFixed(1),"var(--yellow)"],["BLK/G",p.stats.blk.toFixed(1),"var(--purple)"],["FG%",pct(p.stats.fgp),"var(--t1)"],["3P%",pct(p.stats.tpp),"var(--t1)"],["TS%",adv.ts+"%","var(--t1)"],["PER",adv.per,"var(--blue)"],["Win Shares",adv.ws,"var(--green)"],["BPM",adv.bpm,"var(--t1)"]].map(([k,v,c])=>`<div class="adv-stat"><span class="k">${k}</span><span class="v" style="color:${c}">${v}</span></div>`).join("")}<div style="margin-top:10px;background:var(--bg2);border-radius:6px;padding:10px"><div style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.7px;margin-bottom:5px">Contract</div><div style="font-size:16px;font-weight:900;color:var(--t1)">${f$(p.contract.salary)}<span style="font-size:11px;color:var(--t2)">/yr</span></div><div style="font-size:11px;color:var(--t2)">${p.contract.years} yr${p.contract.years!==1?"s":""} left · ${f$(p.contract.salary*p.contract.years)} total</div><div style="margin-top:8px"><div style="font-size:10px;color:var(--t3);margin-bottom:3px">Morale: ${morLabel(mor)}</div><div class="morale-bar"><div class="morale-fill" style="width:${mor}%;background:${morColor(mor)}"></div></div></div></div></div>
+<div><div style="font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">Attributes</div>${attrs.map(([k,label])=>{const v=Math.min(99,Math.max(20,p.attr[k]));return`<div class="ab"><span class="ab-lbl">${label}</span><div class="ab-track"><div class="ab-fill" style="width:${v}%;background:${ac(v)}"></div></div><span class="ab-val">${v}</span></div>`;}).join("")}</div></div>
+<div class="mfooter">${isFa?`<button class="btn btn-gn btn-sm" onclick="closeM();signFA(${p.id})">Sign</button>`:""} ${isMe?`<button class="btn btn-rd btn-sm" onclick="closeM();relP(${p.id})">Release</button><button class="btn btn-bl btn-sm" onclick="closeM();nav('extensions')">Extend</button>`:""} ${!isFa&&!isMe&&tm?`<button class="btn btn-bl btn-sm" onclick="closeM();nav('trade');setTimeout(()=>{if(document.getElementById('trade-psel')){document.getElementById('trade-psel').value=${tm.id};loadTradePartner();}},200)">Trade For</button>`:""} <button class="btn btn-gr btn-sm" onclick="closeM()">Close</button></div></div></div>`;}
+function closeM(){document.getElementById("modal-root").innerHTML="";}
+function showModal(html){document.getElementById("modal-root").innerHTML=`<div class="modal-bg" onclick="if(event.target===this)closeM()"><div class="modal">${html}</div></div>`;}
+
+// TOAST
+let toastT;
+function toast(msg){const el=document.getElementById("toast");el.textContent=msg;el.classList.add("show");clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove("show"),3800);}
+
+// LOTTERY
+function runLotteryAlgorithm(lotteryTeams){const odds=LOTTERY_ODDS,rem=[...lotteryTeams],wts=[...odds.slice(0,rem.length)],lOrder=[];for(let i=0;i<4;i++){if(!rem.length)break;const total=wts.reduce((s,w)=>s+w,0);let rnd=Math.random()*total,cum=0,ch=0;for(let j=0;j<rem.length;j++){cum+=wts[j];if(rnd<=cum){ch=j;break;}}lOrder.push(rem[ch].id);rem.splice(ch,1);wts.splice(ch,1);}rem.forEach(t=>lOrder.push(t.id));G.teams.filter(t=>!lotteryTeams.find(lt=>lt.id===t.id)).sort((a,b)=>a.wins-b.wins).forEach(t=>lOrder.push(t.id));return lOrder;}
+
+// SUPABASE MULTIPLAYER
+function initSupabase(){if(SUPABASE_URL==="https://foxpmrbzxquiyfbbjyqu.supabase.co")return;try{const{createClient}=window.supabase||{};if(createClient)supabaseClient=createClient(SUPABASE_URL,SUPABASE_ANON_KEY);}catch(e){console.error("Supabase init failed:",e);}}
+async function createLeagueDB(leagueName,yourName){if(!supabaseClient){toast("Configure Supabase for multiplayer");return;}const leagueId=Math.random().toString(36).substr(2,8).toUpperCase();G.leagueId=leagueId;G.leagueName=leagueName;G.isHost=true;G.playerName=yourName;G.humanTeams={};await supabaseClient.from("leagues").insert({id:leagueId,name:leagueName,state:JSON.stringify({teams:G.teams,picks:G.picks,humanTeams:{}}),phase:"setup",created_at:new Date().toISOString()});await joinLeagueRoom(leagueId,yourName,null);}
+async function joinLeagueDB(leagueId,yourName){if(!supabaseClient){toast("Configure Supabase for multiplayer");return;}const{data}=await supabaseClient.from("leagues").select("*").eq("id",leagueId).single();if(!data){toast("League not found: "+leagueId);return;}G.leagueId=leagueId;G.leagueName=data.name;G.isHost=false;G.playerName=yourName;if(data.state){const s=JSON.parse(data.state);G.teams=s.teams;G.picks=s.picks;G.humanTeams=s.humanTeams||{};}await joinLeagueRoom(leagueId,yourName,null);}
+async function joinLeagueRoom(leagueId,yourName,teamId){if(!supabaseClient)return;await supabaseClient.from("league_players").upsert({league_id:leagueId,player_name:yourName,team_id:teamId,updated_at:new Date().toISOString()});if(realtimeChannel)realtimeChannel.unsubscribe();realtimeChannel=supabaseClient.channel(`league-${leagueId}`).on("postgres_changes",{event:"*",schema:"public",table:"league_players",filter:`league_id=eq.${leagueId}`},()=>refreshLeaguePlayers()).on("postgres_changes",{event:"*",schema:"public",table:"leagues",filter:`id=eq.${leagueId}`},payload=>{if(payload.new?.state){const s=JSON.parse(payload.new.state);// Apply all state from host
+if(s.teams)G.teams=s.teams;if(s.picks)G.picks=s.picks;if(s.players)G.players=s.players;if(s.freeAgents)G.freeAgents=s.freeAgents;if(s.schedule)G.schedule=s.schedule;if(s.gameResults)G.gameResults=s.gameResults;if(s.humanTeams)G.humanTeams=s.humanTeams;if(s.lotteryOrder)G.lotteryOrder=s.lotteryOrder;if(s.incomingTrades)G.incomingTrades=s.incomingTrades||[];if(s.news)G.news=s.news;if(s.injuries)G.injuries=s.injuries;if(s.morale)G.morale=s.morale;if(s.playoffs!==undefined)G.playoffs=s.playoffs;if(s.phase)G.phase=s.phase;if(s.season)G.season=s.season;if(s.awards)G.awards=s.awards;updateSB();updateNotifs();rc();// Show notification to non-host players
+if(!G.isHost){const rem=G.schedule.filter(g=>!g.played).length;toast(`📡 Commissioner simmed! Week ${26-Math.ceil(rem/14)+1} done. ${rem} games left.`);}}}). subscribe();}
+async function refreshLeaguePlayers(){if(!supabaseClient||!G.leagueId)return;const{data}=await supabaseClient.from("league_players").select("*").eq("league_id",G.leagueId);if(data){G.humanTeams={};data.forEach(row=>{if(row.team_id!==null)G.humanTeams[row.team_id]=row.player_name;});rMultiplayer();buildTeamSelectGrid();}}
+async function selectTeamMP(teamId){if(!supabaseClient||!G.leagueId)return;await supabaseClient.from("league_players").upsert({league_id:G.leagueId,player_name:G.playerName,team_id:teamId,updated_at:new Date().toISOString()});G.playerTeam=teamId;G.humanTeams[teamId]=G.playerName;toast(`Selected: ${G.teams[teamId].name}`);refreshLeaguePlayers();}
+async function syncState(){if(!supabaseClient||!G.leagueId)return;const s={teams:G.teams,picks:G.picks,players:G.players,freeAgents:G.freeAgents.slice(0,40),schedule:G.schedule,// full schedule so all players see same results
+gameResults:G.gameResults.slice(-100),// last 100 results
+humanTeams:G.humanTeams,lotteryOrder:G.lotteryOrder,incomingTrades:G.incomingTrades,news:G.news.slice(0,50),injuries:G.injuries,morale:G.morale,ownerPressure:G.ownerPressure,playoffs:G.playoffs,phase:G.phase,season:G.season,awards:G.awards};try{await supabaseClient.from("leagues").update({state:JSON.stringify(s)}).eq("id",G.leagueId);}catch(e){console.error("Sync failed:",e);}}
+async function startLeagueGame(){if(!supabaseClient||!G.leagueId)return;generateSchedule();buildDraftClass();const lt=[...G.teams].sort((a,b)=>a.wins-b.wins).slice(0,14);G.lotteryOrder=runLotteryAlgorithm(lt);await syncState();await supabaseClient.from("leagues").update({phase:"playing"}).eq("id",G.leagueId);document.getElementById("multiplayer-screen").style.display="none";document.getElementById("app").style.display="flex";updateSB();nav("dash");}
+async function sendMultiplayerTrade(){if(!supabaseClient||!G.leagueId){propTrade();return;}const{data}=await supabaseClient.from("leagues").select("state").eq("id",G.leagueId).single();if(data){const s=JSON.parse(data.state);s.incomingTrades=s.incomingTrades||[];s.incomingTrades.push({id:`mp-${Date.now()}`,fromTeam:G.playerTeam,give:G.tradeReceive,givePicks:G.tradeReceivePicks,receive:G.tradeGive,receivePicks:G.tradeGivePicks});await supabaseClient.from("leagues").update({state:JSON.stringify(s)}).eq("id",G.leagueId);}toast(`📬 Trade sent to ${G.teams[G.tradePartner].name}!`);G.tradeGive=[];G.tradeReceive=[];G.tradeGivePicks=[];G.tradeReceivePicks=[];rTrade();}
+
+// MULTIPLAYER PAGE
+function rMultiplayer(){const el=document.getElementById("page-multiplayer");if(!G.leagueId){el.innerHTML=`<div class="ph"><div class="ph-left"><div class="pt">🌐 League Hub</div></div></div><div style="text-align:center;padding:40px;color:var(--t3)"><div style="font-size:16px;font-weight:700;color:var(--t1);margin-bottom:16px">Playing in solo mode</div><div style="font-size:12px;color:var(--t2)">Start a new game to create or join a multiplayer league</div></div>`;return;}const link=`${window.location.origin}${window.location.pathname}?league=${G.leagueId}`;el.innerHTML=`<div class="ph"><div class="ph-left"><div class="pt">🌐 League Hub</div><div class="ps">${G.leagueName||"My League"} · ID: ${G.leagueId}</div></div></div>
+<div style="background:var(--bg2);border:1px solid var(--acc);border-radius:9px;padding:16px;margin-bottom:16px"><div class="st" style="margin-bottom:8px">🔗 Invite Link</div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><div style="flex:1;background:var(--bg1);border:1px solid var(--bdr);border-radius:6px;padding:8px 10px;font-size:11px;color:var(--acc);font-family:monospace;overflow:hidden;text-overflow:ellipsis">${link}</div><button class="btn btn-acc btn-sm" onclick="navigator.clipboard.writeText('${link}').then(()=>toast('Link copied!'))">Copy Link</button><button class="btn btn-gr btn-sm" onclick="navigator.clipboard.writeText('${G.leagueId}').then(()=>toast('Code copied!'))">Code: ${G.leagueId}</button></div></div>
+<div style="margin-bottom:16px"><div class="st" style="margin-bottom:10px">👥 League Players</div>${Object.entries(G.humanTeams).map(([tid,name])=>`<div class="league-player-row"><div style="font-size:18px">${name===G.playerName?"👑":"👤"}</div><div style="flex:1"><div style="font-weight:700;color:var(--t1)">${name}${name===G.playerName?" (You)":""}</div><div style="font-size:11px;color:var(--t2)">${G.teams[parseInt(tid)]?.name||"No team"}</div></div><span class="badge bg-g">In League</span></div>`).join("")||"<div style='color:var(--t3);font-size:12px'>No players yet</div>"}</div>
+${G.isHost?`<div style="margin-bottom:16px;background:var(--bg2);border:1px solid var(--acc);border-radius:9px;padding:14px"><div class="st" style="margin-bottom:8px;color:var(--acc)">👑 Commissioner Controls</div><div style="font-size:11px;color:var(--t2);margin-bottom:10px">Only you can advance the simulation. All players see results in real-time.</div><div style="display:flex;gap:8px;flex-wrap:wrap">${G.phase==="setup"?`<button class="btn btn-acc" onclick="startLeagueGame()">🏀 Start League Season</button>`:`<button class="btn btn-acc btn-sm" onclick="simNext()">▶ Sim 1 Game</button><button class="btn btn-bl btn-sm" onclick="simWeek()">▶▶ Sim Week</button><button class="btn btn-gr btn-sm" onclick="simAll()">⏭ Sim Full Season</button>`}</div></div>`:G.leagueId?`<div style="background:var(--bg2);border:1px solid var(--yellow);border-radius:9px;padding:14px;margin-bottom:16px"><div style="font-size:13px;font-weight:700;color:var(--yellow);margin-bottom:6px">⏳ Waiting for Commissioner</div><div style="font-size:11px;color:var(--t2)">The commissioner (${Object.entries(G.humanTeams).find(([_,v])=>v===Object.values(G.humanTeams)[0])?.[1]||"host"}) controls when games are simulated. You will be notified automatically when weeks advance.</div></div>`:""}
+<div style="background:var(--bg2);border:1px solid var(--bdr);border-radius:9px;padding:14px"><div class="st" style="margin-bottom:8px">Human Teams</div>${Object.entries(G.humanTeams).map(([tid,name])=>`<div style="font-size:12px;color:var(--t2);padding:3px 0">${name}: ${G.teams[parseInt(tid)]?.name||"—"}</div>`).join("")||"<div style='font-size:12px;color:var(--t3)'>Select your teams</div>"}</div>`;}
+
+// TEAM SELECT
+let selectedTeamId=-1;
+function buildTeamSelectGrid(){const grid=document.getElementById("team-select-grid");if(!grid)return;grid.innerHTML=G.teams.map(t=>{const top=G.players.filter(p=>t.players.includes(p.id)).sort((a,b)=>b.ovr-a.ovr),avg=top.length?Math.round(top.slice(0,8).reduce((s,p)=>s+p.ovr,0)/8):0,takenBy=G.humanTeams[t.id],isTaken=takenBy&&takenBy!==G.playerName;return`<div class="team-card${isTaken?" taken":""}" id="tcard-${t.id}" onclick="${isTaken?"":"selectTeam("+t.id+")"}"><div style="font-size:9px;font-weight:800;color:var(--acc);margin-bottom:2px">${t.conf.toUpperCase()} · ${t.div.toUpperCase()}</div><div style="font-size:12px;font-weight:900;color:var(--t1);margin-bottom:4px">${t.name}</div><div style="font-size:10px;color:var(--t2);margin-bottom:4px">${t.abbr}</div><div style="font-size:10px;color:var(--t2)">★ ${top[0]?.name||"—"}</div><div style="font-size:9px;color:var(--t3);margin-top:2px">OVR: ${avg}</div>${isTaken?`<div style="font-size:9px;color:var(--blue);margin-top:4px">👤 ${takenBy}</div>`:""}</div>`;}).join("");}
+function selectTeam(id){document.querySelectorAll(".team-card").forEach(c=>c.classList.remove("selected"));document.getElementById("tcard-"+id)?.classList.add("selected");selectedTeamId=id;document.getElementById("confirm-team-btn").disabled=false;document.getElementById("selected-team-label").textContent=`Selected: ${G.teams[id].name}`;}
+function confirmTeamSelect(){if(selectedTeamId<0)return;G.playerTeam=selectedTeamId;if(G.leagueId&&supabaseClient)selectTeamMP(selectedTeamId);document.getElementById("team-select-screen").style.display="none";document.getElementById("lottery-screen").style.display="flex";runLotteryScreen();}
+
+// LOBBY SCREENS
+function showSoloSetup(){document.getElementById("mp-extra").innerHTML=`<div style="background:var(--bg2);border:1px solid var(--bdr);border-radius:10px;padding:20px"><div style="font-size:14px;font-weight:700;color:var(--t1);margin-bottom:12px">Enter Your Name</div><input type="text" id="solo-name" placeholder="Your GM name..." style="width:100%;margin-bottom:12px" value="GM"><button class="btn btn-acc" onclick="startSoloMode()">Continue →</button></div>`;}
+function startSoloMode(){const name=document.getElementById("solo-name")?.value||"GM";G.playerName=name;buildTeams();document.getElementById("multiplayer-screen").style.display="none";document.getElementById("team-select-screen").style.display="flex";buildTeamSelectGrid();}
+function showCreateLeague(){document.getElementById("mp-extra").innerHTML=`<div style="background:var(--bg2);border:1px solid var(--bdr);border-radius:10px;padding:20px"><div style="font-size:14px;font-weight:700;color:var(--t1);margin-bottom:12px">Create a Multiplayer League</div><div style="display:flex;flex-direction:column;gap:10px;margin-bottom:12px"><input type="text" id="cl-name" placeholder="Your name..." value="Commissioner"><input type="text" id="cl-league" placeholder="League name..." value="My HoopsGM League"></div><button class="btn btn-acc" onclick="startCreateLeague()">Create League →</button>
+<div style="margin-top:16px;background:var(--bg1);border:1px solid var(--bdr);border-radius:8px;padding:14px;font-size:12px;color:var(--t2)"><div style="font-weight:700;color:var(--t1);margin-bottom:8px">📚 Supabase Setup (Required for Multiplayer)</div><div style="line-height:2">1. Go to <a href="https://supabase.com" target="_blank" style="color:var(--acc)">supabase.com</a> → create free project<br>2. SQL Editor → run:<br><div style="background:var(--bg0);border-radius:4px;padding:8px;margin:4px 0;font-family:monospace;font-size:10px;color:var(--green)">CREATE TABLE leagues (id TEXT PRIMARY KEY, name TEXT, state JSONB, phase TEXT, created_at TIMESTAMPTZ);<br>CREATE TABLE league_players (id BIGSERIAL PRIMARY KEY, league_id TEXT, player_name TEXT, team_id INT, updated_at TIMESTAMPTZ, UNIQUE(league_id, player_name));<br>ALTER TABLE leagues ENABLE ROW LEVEL SECURITY;<br>ALTER TABLE league_players ENABLE ROW LEVEL SECURITY;<br>CREATE POLICY "Allow all" ON leagues FOR ALL USING (true);<br>CREATE POLICY "Allow all" ON league_players FOR ALL USING (true);</div>3. Project Settings → API → copy URL + anon key<br>4. Open this HTML file, find <code style="color:var(--yellow)">https://foxpmrbzxquiyfbbjyqu.supabase.co</code> and <code style="color:var(--yellow)">eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZveHBtcmJ6eHF1aXlmYmJqeXF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1OTAyNTUsImV4cCI6MjA5NjE2NjI1NX0.Nd0UA6Vx_Ey8nZc0F1Oecof04t06pAF_1q1NawvVUZQ</code> and replace them<br>5. Add before &lt;/body&gt;: <code style="color:var(--yellow)">&lt;script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"&gt;&lt;/script&gt;</code></div></div></div>`;}
+function showJoinLeague(){document.getElementById("mp-extra").innerHTML=`<div style="background:var(--bg2);border:1px solid var(--bdr);border-radius:10px;padding:20px"><div style="font-size:14px;font-weight:700;color:var(--t1);margin-bottom:12px">Join a League</div><div style="display:flex;flex-direction:column;gap:10px;margin-bottom:12px"><input type="text" id="jl-name" placeholder="Your name..." value="Player 2"><input type="text" id="jl-code" placeholder="League code (e.g. ABC12345)..." style="text-transform:uppercase;letter-spacing:2px"></div><button class="btn btn-acc" onclick="startJoinLeague()">Join League →</button></div>`;}
+function startCreateLeague(){const name=document.getElementById("cl-name")?.value||"GM",ln=document.getElementById("cl-league")?.value||"My League";initSupabase();if(!supabaseClient){toast("Supabase not configured — see setup guide above");return;}buildTeams();G.playerName=name;G.leagueName=ln;G.isHost=true;document.getElementById("multiplayer-screen").style.display="none";document.getElementById("team-select-screen").style.display="flex";document.getElementById("ts-subtitle").textContent="Choose your team — friends will see taken teams";buildTeamSelectGrid();createLeagueDB(ln,name);}
+function startJoinLeague(){const name=document.getElementById("jl-name")?.value||"Player",code=(document.getElementById("jl-code")?.value||"").toUpperCase().trim();if(!code){toast("Enter a league code");return;}initSupabase();if(!supabaseClient){toast("Supabase not configured");return;}G.playerName=name;document.getElementById("multiplayer-screen").style.display="none";document.getElementById("team-select-screen").style.display="flex";buildTeams();buildTeamSelectGrid();joinLeagueDB(code,name);}
+
+// LOTTERY SCREEN
+function runLotteryScreen(){const lt=[...G.teams].sort((a,b)=>a.wins-b.wins||b.losses-a.losses).slice(0,14);G.lotteryOrder=runLotteryAlgorithm(lt);const myPick=G.lotteryOrder.indexOf(G.playerTeam)+1,topP=DRAFT_2027[Math.min(myPick-1,DRAFT_2027.length-1)];document.getElementById("lottery-content").innerHTML=`<div style="text-align:center;margin-bottom:20px"><div style="font-size:18px;font-weight:900;color:var(--t1);margin-bottom:6px">🎱 Lottery Complete!</div><div style="font-size:13px;color:var(--t2)">Your <b style="color:var(--acc)">${G.teams[G.playerTeam].name}</b> picks <b style="color:var(--yellow)">#${myPick}</b></div>${topP?`<div style="font-size:12px;color:var(--t2);margin-top:6px">Best at your slot: <b style="color:var(--acc)">${topP.n}</b> — ${topP.note}</div>`:""}</div><div style="background:var(--bg2);border:1px solid var(--bdr);border-radius:10px;overflow:hidden;margin-bottom:20px"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:var(--bg3)"><th style="padding:8px 12px;text-align:left;color:var(--t3)">Pick</th><th style="padding:8px 12px;text-align:left;color:var(--t3)">Team</th><th style="padding:8px 12px;text-align:left;color:var(--t3)">Conf</th><th style="padding:8px 12px;text-align:left;color:var(--t3)">Odds</th></tr></thead><tbody>${G.lotteryOrder.slice(0,14).map((tid,i)=>{const t=G.teams[tid],isMe=tid===G.playerTeam;return`<tr style="border-bottom:1px solid var(--bdr);${isMe?"background:rgba(249,115,22,0.1)":""}"><td style="padding:8px 12px;font-weight:800;color:${i<3?"var(--yellow)":"var(--t2)"}">${i+1}</td><td style="padding:8px 12px;font-weight:700;color:${isMe?"var(--acc)":"var(--t1)"}">${isMe?"★ ":""}${t.name} (${t.abbr})</td><td style="padding:8px 12px;color:var(--t2)">${t.conf}</td><td style="padding:8px 12px;color:var(--t3)">${LOTTERY_ODDS[i]||"<1"}%</td></tr>`;}).join("")}</tbody></table></div><div style="text-align:center"><button class="btn btn-acc" style="font-size:14px;padding:10px 28px" onclick="startGame()">Enter the League →</button></div>`;}
+function startGame(){document.getElementById("lottery-screen").style.display="none";document.getElementById("app").style.display="flex";generateSchedule();buildDraftClass();addNews(`🏀 Welcome GM ${G.playerName}! You are running the ${getT().name}. Season ${G.season-1}-${String(G.season).slice(-2)} begins!`);addNews(`🎱 Draft lottery: ${G.teams[G.lotteryOrder[0]].name} picks #1. You pick #${G.lotteryOrder.indexOf(G.playerTeam)+1}.`);if(DRAFT_2027[0])addNews(`📋 Top 2027 prospect: ${DRAFT_2027[0].n} (${DRAFT_2027[0].pos}, ${DRAFT_2027[0].school}) — "${DRAFT_2027[0].note}"`);updateSB();nav("dash");document.getElementById("owner-pressure-wrap").style.display="block";}
+
+// BOOT
+initSupabase();
+const _url=new URL(window.location.href),_lp=_url.searchParams.get("league");
+if(_lp){setTimeout(()=>{showJoinLeague();const el=document.getElementById("jl-code");if(el)el.value=_lp;},100);}
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</body>
+</html>
